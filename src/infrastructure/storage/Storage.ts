@@ -1,6 +1,9 @@
+import { forget, mirror } from './durableMirror';
+
 export interface StorageRepository<T> {
   get(): T;
-  set(value: T): void;
+  /** `false` quando a gravação falhou — cota estourada ou storage indisponível. */
+  set(value: T): boolean;
   clear(): void;
 }
 
@@ -27,11 +30,21 @@ export function createStorageRepository<T>(
         return fallback;
       }
     },
-    set(value: T) {
-      try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* modo somente memória */ }
+    set(value: T): boolean {
+      try {
+        const raw = JSON.stringify(value);
+        localStorage.setItem(key, raw);
+        mirror(key, raw);
+        return true;
+      } catch {
+        // QuotaExceededError ou storage bloqueado. Quem chamou decide o que mostrar:
+        // engolir aqui faria o app parecer que salvou quando não salvou.
+        return false;
+      }
     },
     clear() {
       try { localStorage.removeItem(key); } catch { /* storage indisponível */ }
+      forget(key);
     },
   };
 }

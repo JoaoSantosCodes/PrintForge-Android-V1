@@ -33,6 +33,24 @@ describe('StorageRepository', () => {
     expect(repository.get()).toEqual({ value: 0 });
   });
 
+  it('devolve false quando a cota estoura, em vez de fingir que salvou', () => {
+    const cheio = {
+      data: new Map<string, string>(),
+      getItem(key: string) { return this.data.get(key) ?? null; },
+      setItem() { throw new DOMException('quota', 'QuotaExceededError'); },
+      removeItem(key: string) { this.data.delete(key); },
+    };
+    globalThis.localStorage = cheio as unknown as Storage;
+    const repository = createStorageRepository('cheio', [] as string[]);
+    expect(repository.set(['PLA'])).toBe(false);
+  });
+
+  it('devolve true quando a gravação funciona', () => {
+    globalThis.localStorage = storage as unknown as Storage;
+    const repository = createStorageRepository('ok', [] as string[]);
+    expect(repository.set(['PLA'])).toBe(true);
+  });
+
   it('persiste, lê e limpa valores válidos', () => {
     globalThis.localStorage = storage as unknown as Storage;
     const repository = createStorageRepository('valid', [], (value): value is string[] => Array.isArray(value) && value.every((item) => typeof item === 'string'));

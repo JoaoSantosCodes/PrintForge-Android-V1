@@ -9,7 +9,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
-const isSettings: StorageValidator<StoredSettings> = (value): value is StoredSettings => {
+export const isSettings: StorageValidator<StoredSettings> = (value): value is StoredSettings => {
   if (!value || typeof value !== 'object') return false;
   const item = value as Record<string, unknown>;
   return isFiniteNumber(item.energyPricePerKwh) && isFiniteNumber(item.laborCostPerHour) && isFiniteNumber(item.packaging) && isFiniteNumber(item.marginPercent);
@@ -30,9 +30,9 @@ const isCalculation: StorageValidator<CalculationRecord> = (value): value is Cal
   return typeof item.id === 'string' && typeof item.createdAt === 'string' && !!item.input && !!item.material && !!item.printer && !!item.breakdown;
 };
 
-const isMaterialList: StorageValidator<Material[]> = (value): value is Material[] => Array.isArray(value) && value.every(isMaterial);
-const isPrinterList: StorageValidator<Printer[]> = (value): value is Printer[] => Array.isArray(value) && value.every(isPrinter);
-const isCalculationList: StorageValidator<CalculationRecord[]> = (value): value is CalculationRecord[] => Array.isArray(value) && value.every(isCalculation);
+export const isMaterialList: StorageValidator<Material[]> = (value): value is Material[] => Array.isArray(value) && value.every(isMaterial);
+export const isPrinterList: StorageValidator<Printer[]> = (value): value is Printer[] => Array.isArray(value) && value.every(isPrinter);
+export const isCalculationList: StorageValidator<CalculationRecord[]> = (value): value is CalculationRecord[] => Array.isArray(value) && value.every(isCalculation);
 
 const settingsFallback: StoredSettings = {
   energyPricePerKwh: 1,
