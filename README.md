@@ -2,42 +2,53 @@
 
 Aplicativo web/Android offline-first para calcular custos e preços de impressão 3D. O PrintForge usa um núcleo financeiro determinístico, catálogo local de materiais e impressoras e histórico com snapshots completos.
 
-## GATE 3 implementado
+## Estado atual
 
-| Área | Status | Implementação |
-|---|---:|---|
-| Core financeiro | Concluído | `bigint` em centavos, validações e arredondamento determinístico |
-| Hardening | Concluído | Testes de margens, entradas negativas, custos, arredondamentos e tipos |
-| Persistência | Concluído | Repositórios locais com validação de schema, fallback e recuperação de JSON corrompido |
-| Migração | Concluído | Configuração legada `printforge-values` migrada para `printforge.settings` |
-| Dashboard | Concluído | Último orçamento, contagem de materiais/impressoras e histórico |
-| Compartilhamento | Concluído | Web Share API no Android; clipboard como fallback no navegador |
-| Privacidade | Concluído | Política dentro do app e em `public/privacy.html` |
-| Identidade | Concluído | Ícone 512×512, manifesto instalável e nome curto `PrintForge 3D` |
-| Android nativo | Concluído | Plataforma Capacitor gerada e sincronizada com a build web |
+| Área | Implementação |
+|---|---|
+| Núcleo financeiro | `bigint` em centavos, arredondamento determinístico, margem sobre preço de venda |
+| Entrada | Peso em gramas ou volume em cm³, convertido pela densidade do material |
+| Navegação | Botão voltar do Android trata formulários, pilha de abas e saída |
+| Resiliência | `ErrorBoundary` na raiz; falha de gravação é reportada, não engolida |
+| Persistência | `localStorage` com validação de schema, espelhado em `SharedPreferences` no Android |
+| Histórico | Teto de 500 registros, cada um com snapshot completo do que foi orçado |
+| Backup | Exportar e importar JSON, com validação e mensagem própria por tipo de recusa |
+| Aparência | Tema claro e escuro em 38 tokens, com escolha Automático/Claro/Escuro |
+| Análise | Barra de composição do custo, destacando a fatia dominante |
+| Nativo | 6 plugins Capacitor: app, preferences, filesystem, share, splash-screen, status-bar |
+| Testes | 123 no total, 28 montando componentes com Testing Library |
 
 ## Arquitetura
 
 ```text
 src/
-├── core/
-│   ├── pricing.ts
-│   ├── money.ts
+├── core/            # puro, sem React
+│   ├── pricing.ts       # fórmulas em bigint
+│   ├── money.ts         # centavos e formatação
+│   ├── input.ts         # máscaras decimal e inteira
+│   ├── volume.ts        # conversão volume ⇄ massa
+│   ├── composition.ts   # repartição do custo
+│   ├── navigation.ts    # decisão do botão voltar
+│   ├── history.ts       # teto do histórico
+│   ├── theme.ts         # resolução de tema
+│   ├── format.ts        # duração e data
 │   └── types.ts
-├── application/
+├── application/     # casos de uso
 │   ├── calculateQuote.ts
+│   ├── backup.ts
 │   ├── saveMaterial.ts
 │   └── savePrinter.ts
-├── infrastructure/storage/
-│   ├── Storage.ts
-│   └── LocalStorageRepository.ts
-├── components/Money.tsx
+├── infrastructure/
+│   ├── storage/         # repositórios e espelho nativo
+│   └── native/          # hooks de Capacitor
+├── features/        # uma tela por arquivo
+├── components/      # primitivas e campos
 ├── App.tsx
 ├── main.tsx
 └── styles.css
 ```
 
-A interface `StorageRepository<T>` mantém a persistência desacoplada do domínio. O armazenamento atual usa `localStorage`; a próxima evolução pode trocar sua implementação por Capacitor Preferences ou SQLite sem alterar `core/` e `application/`.
+A interface `StorageRepository<T>` mantém a persistência desacoplada do domínio. O `localStorage` segue como cópia de trabalho síncrona — os inicializadores de `useState` precisam de leitura imediata — e cada gravação é espelhada em `SharedPreferences`. No boot, `restoreMissing` repõe apenas as chaves que sumiram do WebView: o espelho é rede de segurança, nunca fonte da verdade.
 
 ## Dados persistidos
 
@@ -47,6 +58,7 @@ A interface `StorageRepository<T>` mantém a persistência desacoplada do domín
 | `printforge.materials` | Catálogo de materiais |
 | `printforge.printers` | Catálogo de impressoras |
 | `printforge.calculations` | Histórico, cada item com snapshot de input, material, impressora e resultado |
+| `printforge.theme` | Preferência de tema deste aparelho — fora do backup de propósito |
 
 ## Desenvolvimento web
 
@@ -58,10 +70,12 @@ npm run dev
 Validação local:
 
 ```bash
-npm run check
-npm run test
-npm run build
+npm run check   # tsc -b --noEmit
+npm run test    # vitest
+npm run build   # tsc -b && vite build
 ```
+
+> `npm run check` usa `tsc -b`, não `tsc --noEmit`. O `tsconfig.json` raiz é um arquivo-solução com project references, e `--noEmit` sozinho não verifica os projetos referenciados — reportaria sucesso sobre código quebrado.
 
 ## Android
 
