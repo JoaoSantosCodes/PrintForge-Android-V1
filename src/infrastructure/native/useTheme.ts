@@ -58,6 +58,20 @@ export function useTheme(): {
     else document.documentElement.setAttribute('data-theme', attribute);
 
     void applyThemeToNativeChrome(resolved);
+
+    // A saída da splash do Android 12+ devolve a aparência da barra de status ao valor
+    // declarado no tema da janela — `values/` ou `values-night/`, conforme o aparelho.
+    // Quando a escolha do usuário contraria o tema do aparelho, esse valor é o oposto do
+    // certo, e a aplicação acima, que roda antes, é desfeita: ícones brancos sobre o tema
+    // claro a cada abertura. Não há aviso do fim da splash exposto ao JS, então repomos
+    // uma vez depois que ela certamente já saiu.
+    //
+    // É um prazo estimado, e assumido como tal: o pior caso vira um segundo com os ícones
+    // errados em vez de errados para sempre. A alternativa sem espera seria ler a
+    // preferência no MainActivity, o que amarraria código Java ao nome de uma chave de
+    // armazenamento — troca ruim para o que se ganha.
+    const reaplicar = window.setTimeout(() => void applyThemeToNativeChrome(resolved), 1000);
+    return () => window.clearTimeout(reaplicar);
   }, [preference, resolved]);
 
   const setPreference = (next: ThemePreference) => {

@@ -11,6 +11,9 @@ const CHROME_BACKGROUND: Record<ResolvedTheme, string> = {
 
 const isNative = (): boolean => Capacitor.getPlatform() !== 'web';
 
+/** Último tema aplicado, para o `hideSplash` saber o que repor. */
+let lastTheme: ResolvedTheme | null = null;
+
 /**
  * Alinha a barra de status ao tema atual.
  *
@@ -20,9 +23,25 @@ const isNative = (): boolean => Capacitor.getPlatform() !== 'web';
  */
 export async function applyThemeToNativeChrome(theme: ResolvedTheme): Promise<void> {
   if (!isNative()) return;
+  lastTheme = theme;
+
+  // A ordem não é indiferente, e custou um bug visível no aparelho. O
+  // `setBackgroundColor` do plugin mexe nas flags da janela para chamar o
+  // `setStatusBarColor`, e mexer nas flags depois do `setStyle` desfaz a aparência que
+  // o `setStyle` acabou de definir — no tema claro isso deixava os ícones brancos sobre
+  // fundo claro, praticamente invisíveis. A cor vem primeiro, o estilo por último.
+  //
+  // Os dois try/catch são separados de propósito: a partir do Android 15 (targetSdk 35+)
+  // o `setStatusBarColor` é ignorado, e num único bloco uma falha dele levaria junto o
+  // `setStyle`, que é justamente o que ainda funciona.
+  try {
+    await StatusBar.setBackgroundColor({ color: CHROME_BACKGROUND[theme] });
+  } catch {
+    // Em Android 15+ a cor da barra vem do que o app desenha atrás dela, não daqui.
+  }
+
   try {
     await StatusBar.setStyle({ style: theme === 'dark' ? Style.Dark : Style.Light });
-    await StatusBar.setBackgroundColor({ color: CHROME_BACKGROUND[theme] });
   } catch {
     // Barra de status indisponível não impede o app de rodar.
   }
@@ -41,4 +60,10 @@ export async function hideSplash(): Promise<void> {
   } catch {
     // Se a splash não existir, não há o que esconder.
   }
+
+  // A saída da splash devolve a aparência da barra de status ao padrão da janela, o que
+  // desfazia o que o tema tinha acabado de aplicar. Trocar de tema com o app aberto
+  // funcionava; abrir o app no tema claro deixava os ícones brancos sobre fundo claro,
+  // porque ali o `hideSplash` vinha depois. Repor é a última palavra na inicialização.
+  if (lastTheme) await applyThemeToNativeChrome(lastTheme);
 }

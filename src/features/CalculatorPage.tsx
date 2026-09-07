@@ -69,7 +69,10 @@ export function CalculatorPage({
       <section className="cards-grid" aria-label="Parâmetros de cálculo">
         <Card icon={<Package />} title="Material" helper={material ? `${material.name} · ${material.density.toFixed(2)} g/cm³` : 'Cadastre um material'}>
           <MassInput quote={quote} material={material} onNumberChange={onNumberChange} />
-          {material && <div className="field-readonly"><span>Preço de referência</span><strong>{money(material.pricePerKg * 100)}/kg</strong></div>}
+          {/* Sem `* 100`: `pricePerKg` já está em reais, e `money` só converte de centavos
+              quando recebe um bigint. Multiplicar aqui exibia R$ 12.000,00 para um filamento
+              de R$ 120,00. */}
+          {material && <div className="field-readonly"><span>Preço de referência</span><strong>{money(material.pricePerKg)}/kg</strong></div>}
         </Card>
         <Card icon={<Clock3 />} title="Tempo" helper="Duração da impressão">
           <Field label="Horas" value={hours} mode="integer" onChange={(value) => onTimeChange('hours', value)} />

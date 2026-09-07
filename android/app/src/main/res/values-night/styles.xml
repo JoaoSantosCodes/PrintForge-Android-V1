@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        Contrapartida escura de values/styles.xml: icones claros sobre fundo escuro.
+        O Android escolhe entre os dois pelo tema do aparelho, o que cobre sozinho o caso
+        "Automatico" do app. A troca manual entre Claro e Escuro continua por conta do
+        StatusBar.setStyle, que funciona depois que a splash sai de cena.
+    -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

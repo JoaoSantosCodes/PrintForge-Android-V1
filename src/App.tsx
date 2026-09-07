@@ -17,6 +17,7 @@ import { backupFileName, createBackup, readBackup } from './application/backup';
 import { exportBackupFile, pickBackupFile } from './infrastructure/native/backupFile';
 import { resolveBackAction, type Tab } from './core/navigation';
 import { useBackButton } from './infrastructure/native/useBackButton';
+import { useWebBackButton } from './infrastructure/native/useWebBackButton';
 import { shareText } from './infrastructure/native/shareText';
 import { useTheme } from './infrastructure/native/useTheme';
 import type { CalculationRecord, Material, Printer as PrinterModel, QuoteInput, StoredSettings } from './core/types';
@@ -156,8 +157,9 @@ function App() {
 
   // Ordem de precedencia do botao voltar: primeiro fecha o que esta por cima,
   // depois desfaz a navegacao, e so entao deixa o app encerrar.
-  useBackButton(() => {
-    const action = resolveBackAction({ tab, tabHistory, showPrivacy, showMaterialForm, showPrinterForm });
+  const backState = { tab, tabHistory, showPrivacy, showMaterialForm, showPrinterForm };
+  const handleBack = () => {
+    const action = resolveBackAction(backState);
     switch (action.type) {
       case 'closeMaterialForm': setShowMaterialForm(false); return true;
       case 'closePrinterForm': setShowPrinterForm(false); return true;
@@ -169,7 +171,12 @@ function App() {
       case 'goHome': setTab('home'); return true;
       case 'exit': return false;
     }
-  });
+  };
+
+  // A mesma decisao serve aos dois: o botao fisico do Android e o voltar do navegador.
+  // Cada hook fica inerte na plataforma que nao e a dele.
+  useBackButton(handleBack);
+  useWebBackButton(resolveBackAction(backState).type !== 'exit', handleBack);
 
   // Avisa no maximo uma vez por sessao: este efeito dispara a cada tecla nos ajustes.
   const storageWarned = useRef(false);
