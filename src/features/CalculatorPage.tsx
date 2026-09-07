@@ -180,7 +180,7 @@ function CostBar({ result }: { result: ReturnType<typeof calculateQuote> | null 
 
   return (
     <div className="cost-bar-block">
-      <div className="cost-bar" role="img" aria-label={fatias.map((f) => `${f.label} ${Math.round(f.percent)}%`).join(', ')}>
+      <div className="cost-bar" role="img" aria-label={fatias.map((f) => `${f.label} ${f.percentLabel}%`).join(', ')}>
         {fatias.map((fatia) => (
           <span key={fatia.key} className={`cost-slice slice-${fatia.key}`} style={{ width: `${fatia.percent}%` }} />
         ))}
@@ -190,13 +190,13 @@ function CostBar({ result }: { result: ReturnType<typeof calculateQuote> | null 
           <li key={fatia.key}>
             <span className={`cost-dot slice-${fatia.key}`} aria-hidden="true" />
             {fatia.label}
-            <strong>{Math.round(fatia.percent)}%</strong>
+            <strong>{fatia.percentLabel}%</strong>
           </li>
         ))}
       </ul>
       {dominante && (
         <p className="cost-insight">
-          <strong>{dominante.label}</strong> responde por {Math.round(dominante.percent)}% do custo deste orçamento.
+          <strong>{dominante.label}</strong> responde por {dominante.percentLabel}% do custo deste orçamento.
         </p>
       )}
     </div>

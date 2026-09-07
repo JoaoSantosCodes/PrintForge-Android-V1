@@ -2,21 +2,34 @@
 
 Aplicativo web/Android offline-first para calcular custos e preços de impressão 3D. O PrintForge usa um núcleo financeiro determinístico, catálogo local de materiais e impressoras e histórico com snapshots completos.
 
+## Telas
+
+| | |
+|---|---|
+| ![Tela de cálculo, com preço sugerido e parâmetros da peça](docs/screenshots/calculadora.png) | ![Composição do custo, com barra proporcional e a fatia dominante em destaque](docs/screenshots/composicao.png) |
+| **Cálculo** — preço e lucro no topo, parâmetros abaixo. | **Composição** — de que o custo é feito, e o que mais pesa. |
+| ![Histórico de orçamentos com custo, venda e margem](docs/screenshots/historico.png) | ![Configurações com seleção de tema e backup](docs/screenshots/ajustes.png) |
+| **Histórico** — cada registro guarda um snapshot do que foi orçado. | **Ajustes** — parâmetros padrão, tema e backup. |
+
+Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho de loja ficam em `store-assets/`, fora do controle de versão.
+
 ## Estado atual
 
 | Área | Implementação |
 |---|---|
 | Núcleo financeiro | `bigint` em centavos, arredondamento determinístico, margem sobre preço de venda |
 | Entrada | Peso em gramas ou volume em cm³, convertido pela densidade do material |
-| Navegação | Botão voltar do Android trata formulários, pilha de abas e saída |
+| Navegação | Botão voltar do Android e voltar do navegador, pela mesma decisão pura |
 | Resiliência | `ErrorBoundary` na raiz; falha de gravação é reportada, não engolida |
 | Persistência | `localStorage` com validação de schema, espelhado em `SharedPreferences` no Android |
 | Histórico | Teto de 500 registros, cada um com snapshot completo do que foi orçado |
 | Backup | Exportar e importar JSON, com validação e mensagem própria por tipo de recusa |
 | Aparência | Tema claro e escuro em 38 tokens, com escolha Automático/Claro/Escuro |
+| Barra de status | Aparência declarada em `values/` e `values-night/`, e reaplicada pelo tema escolhido |
 | Análise | Barra de composição do custo, destacando a fatia dominante |
 | Nativo | 6 plugins Capacitor: app, preferences, filesystem, share, splash-screen, status-bar |
-| Testes | 123 no total, 28 montando componentes com Testing Library |
+| Testes | 143 no total, 37 montando componentes com Testing Library |
+| Verificação | APK de release percorrido em emulador Android API 36 |
 
 ## Arquitetura
 
@@ -40,7 +53,7 @@ src/
 │   └── savePrinter.ts
 ├── infrastructure/
 │   ├── storage/         # repositórios e espelho nativo
-│   └── native/          # hooks de Capacitor
+│   └── native/          # hooks de Capacitor e ajuste da barra de status
 ├── features/        # uma tela por arquivo
 ├── components/      # primitivas e campos
 ├── App.tsx
@@ -99,6 +112,26 @@ npm run android:release
 
 A assinatura final não deve usar uma chave descartável. O arquivo `.aab` deve ser gerado e protegido no ambiente de release do responsável pelo aplicativo.
 
+## Verificação em aparelho
+
+O APK de release — o mesmo artefato que vai à loja, não uma build de depuração — foi instalado em emulador Android API 36 e percorrido item a item.
+
+| Verificado | Resultado |
+|---|---|
+| Botão voltar | Fecha o formulário, volta uma aba, volta ao início e só então encerra |
+| Exportar backup | Folha nativa de compartilhamento, com o arquivo nomeado por data |
+| Importar backup | Seletor do sistema, parâmetros e catálogo substituídos |
+| Persistência | Dados e preferência de tema sobrevivem a encerrar e reabrir |
+| Abertura | Sem quadro branco entre o lançador e a primeira tela |
+| Campos de tempo | Vírgula digitada não zera o valor |
+| Temas | Claro e escuro legíveis, com a barra de status acompanhando |
+
+Três defeitos apareceram nessa primeira sessão e foram corrigidos: ícones brancos da barra de status sobre o tema claro, preço de referência exibido cem vezes maior, e percentuais da composição que podiam somar 101%. Nenhum deles era visível em jsdom.
+
+**Sem verificação ainda:** aparelho físico (variação entre fabricantes, memória apertada, toque real), rotação de tela, e o desenho do teclado numérico — o emulador não exibiu o teclado do sistema de forma confiável, então o layout depende apenas do `inputMode` declarado no código.
+
 ## Checklist de publicação
 
-Antes do envio à Google Play, ainda devem ser preenchidos os dados da conta de desenvolvedor, verificação de e-mail e telefone, ficha do app, screenshots, classificação etária, Data Safety, contato real da política de privacidade e assinatura segura do AAB. O teste em dispositivo Android deve cobrir teclado numérico, rotação, telas pequenas, persistência após encerramento, navegação, botão voltar, modo escuro e ausência de internet.
+Antes do envio à Google Play, ainda devem ser preenchidos os dados da conta de desenvolvedor, verificação de e-mail e telefone, ficha do app, classificação etária, Data Safety, contato real da política de privacidade e assinatura segura do AAB.
+
+A política de privacidade é servida em `/privacy.html` a partir da versão web, e o mesmo texto aparece dentro do app. As capturas de tela para a ficha estão em `store-assets/` — telefone em 1080×1920, tablets de 7" e 10" — fora do controle de versão por conterem material de loja.
