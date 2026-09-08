@@ -140,10 +140,45 @@ function App() {
     [quote, selectedMaterial, selectedPrinter],
   );
 
+  /**
+   * As duas funções abaixo existem para que a lista de chaves de armazenamento apareça
+   * uma vez só.
+   *
+   * Havia cópias idênticas nos quatro caminhos — exportar arquivo, importar arquivo,
+   * enviar para a nuvem, restaurar da nuvem. Não era feiura: quem acrescentasse uma
+   * sétima chave precisaria lembrar de quatro lugares, e esquecer um deixaria a
+   * restauração da nuvem devolvendo dados incompletos sem erro nenhum.
+   */
+  const snapshotBackup = () => createBackup({
+    settings,
+    materials,
+    printers,
+    calculations,
+    spools: stock.spools,
+    stockMovements: stock.movements,
+  });
+
+  /** Grava tudo e só então atualiza a tela. Devolve `false` se o armazenamento recusou. */
+  const applyBackup = (backup: ReturnType<typeof createBackup>): boolean => {
+    const gravou = settingsRepository.set(backup.settings)
+      && materialsRepository.set(backup.materials)
+      && printersRepository.set(backup.printers)
+      && calculationsRepository.set(backup.calculations)
+      && spoolsRepository.set(backup.spools)
+      && stockMovementsRepository.set(backup.stockMovements);
+    if (!gravou) return false;
+
+    setSettings(backup.settings);
+    setMaterials(backup.materials);
+    setPrinters(backup.printers);
+    setCalculations(backup.calculations);
+    setStock({ spools: backup.spools, movements: backup.stockMovements });
+    return true;
+  };
+
   const handleExportBackup = async () => {
     try {
-      const backup = createBackup({ settings, materials, printers, calculations, spools: stock.spools, stockMovements: stock.movements });
-      await exportBackupFile(backupFileName(), JSON.stringify(backup, null, 2));
+      await exportBackupFile(backupFileName(), JSON.stringify(snapshotBackup(), null, 2));
       setToast('Backup gerado.');
     } catch {
       setToast('Não foi possível gerar o backup.');
@@ -161,23 +196,10 @@ function App() {
     }
 
     const { backup } = result;
-    const saved = settingsRepository.set(backup.settings)
-      && materialsRepository.set(backup.materials)
-      && printersRepository.set(backup.printers)
-      && calculationsRepository.set(backup.calculations)
-      && spoolsRepository.set(backup.spools)
-      && stockMovementsRepository.set(backup.stockMovements);
-
-    if (!saved) {
+    if (!applyBackup(backup)) {
       setToast('O backup foi lido, mas não coube no armazenamento do aparelho.');
       return;
     }
-
-    setSettings(backup.settings);
-    setMaterials(backup.materials);
-    setPrinters(backup.printers);
-    setCalculations(backup.calculations);
-    setStock({ spools: backup.spools, movements: backup.stockMovements });
     setToast(`Backup restaurado: ${backup.materials.length} materiais, ${backup.printers.length} impressoras, ${backup.spools.length} bobinas.`);
   };
 
@@ -292,9 +314,8 @@ function App() {
   };
 
   const handleCloudUpload = () => void runCloud(async () => {
-    const backup = createBackup({ settings, materials, printers, calculations, spools: stock.spools, stockMovements: stock.movements });
     const comFoto = calculations.filter((item) => item.hasPhoto).map((item) => item.id);
-    return cloud.uploadBackup(JSON.stringify(backup, null, 2), comFoto);
+    return cloud.uploadBackup(JSON.stringify(snapshotBackup(), null, 2), comFoto);
   });
 
   /**
@@ -309,22 +330,10 @@ function App() {
     const lido = readBackup(baixado.json);
     if (!lido.ok) return { ok: false, reason: lido.reason };
 
-    const { backup } = lido;
-    const gravou = settingsRepository.set(backup.settings)
-      && materialsRepository.set(backup.materials)
-      && printersRepository.set(backup.printers)
-      && calculationsRepository.set(backup.calculations)
-      && spoolsRepository.set(backup.spools)
-      && stockMovementsRepository.set(backup.stockMovements);
-
-    if (!gravou) return { ok: false, reason: 'O backup foi baixado, mas não coube no armazenamento do aparelho.' };
-
-    setSettings(backup.settings);
-    setMaterials(backup.materials);
-    setPrinters(backup.printers);
-    setCalculations(backup.calculations);
-    setStock({ spools: backup.spools, movements: backup.stockMovements });
-    return { ok: true, message: `Restaurado da nuvem: ${backup.materials.length} materiais, ${baixado.photos} fotos.` };
+    if (!applyBackup(lido.backup)) {
+      return { ok: false, reason: 'O backup foi baixado, mas não coube no armazenamento do aparelho.' };
+    }
+    return { ok: true, message: `Restaurado da nuvem: ${lido.backup.materials.length} materiais, ${baixado.photos} fotos.` };
   });
 
   const updateQuoteNumber = (key: keyof QuoteInput, rawValue: string) => {
