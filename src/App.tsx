@@ -14,9 +14,7 @@ import { HistoryPage } from './features/HistoryPage';
 import { StockPage } from './features/StockPage';
 import { PrivacyPage, SettingsPage } from './features/SettingsPage';
 import { CloudSection } from './features/CloudSection';
-import { cloudConfigured } from './infrastructure/cloud/supabase';
-import * as cloud from './infrastructure/cloud/cloudBackupStore';
-import type { CloudStatus } from './core/cloudBackup';
+import { useCloudBackup } from './infrastructure/cloud/useCloudBackup';
 import { appendCalculation } from './core/history';
 import { pieces } from './core/quantity';
 import { deletePhoto, photoFromUrl, pickPhoto, savePhoto, sharePhotoWithText } from './infrastructure/native/photoFile';
@@ -126,10 +124,6 @@ function App() {
    */
   const [photoDraft, setPhotoDraft] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
-  // `null` significa "esta compilação não tem nuvem": a seção inteira some, em vez de
-  // aparecer desabilitada e sugerir uma funcionalidade que não existe aqui.
-  const [cloudState, setCloudState] = useState<CloudStatus | null>(null);
-  const [cloudBusy, setCloudBusy] = useState(false);
   const [materialDraft, setMaterialDraft] = useState<MaterialForm>({ name: '', pricePerKg: 120, density: 1.24 });
   const [printerDraft, setPrinterDraft] = useState<PrinterForm>({ name: '', powerWatts: 130, machineCostPerHour: 5, maintenancePerHour: 1 });
 
@@ -295,45 +289,16 @@ function App() {
     setToast('Bobina cadastrada.');
   };
 
-  useEffect(() => {
-    if (!cloudConfigured()) return;
-    void cloud.cloudStatus().then(setCloudState);
-  }, []);
-
-  const refreshCloud = async () => setCloudState(await cloud.cloudStatus());
-
-  const runCloud = async (acao: () => Promise<{ ok: boolean; reason?: string; message?: string }>) => {
-    setCloudBusy(true);
-    try {
-      const resultado = await acao();
-      setToast(resultado.ok ? (resultado.message ?? 'Pronto.') : (resultado.reason ?? 'Não deu certo.'));
-      await refreshCloud();
-    } finally {
-      setCloudBusy(false);
-    }
-  };
-
-  const handleCloudUpload = () => void runCloud(async () => {
-    const comFoto = calculations.filter((item) => item.hasPhoto).map((item) => item.id);
-    return cloud.uploadBackup(JSON.stringify(snapshotBackup(), null, 2), comFoto);
-  });
-
   /**
-   * Restaurar da nuvem passa pelo mesmo `readBackup` do arquivo local, com as mesmas
-   * recusas por tipo: um caminho de validação só, para a nuvem não virar uma porta que
-   * aceita o que o arquivo recusaria.
+   * A nuvem mora num hook próprio, e a fronteira com ele são estas três funções: o que
+   * sobe, o que fazer com o que desce, e quem tem foto. O hook não precisa conhecer a
+   * forma dos dados do aplicativo para guardar um arquivo.
    */
-  const handleCloudRestore = () => void runCloud(async () => {
-    const baixado = await cloud.downloadBackup();
-    if (!baixado.ok) return baixado;
-
-    const lido = readBackup(baixado.json);
-    if (!lido.ok) return { ok: false, reason: lido.reason };
-
-    if (!applyBackup(lido.backup)) {
-      return { ok: false, reason: 'O backup foi baixado, mas não coube no armazenamento do aparelho.' };
-    }
-    return { ok: true, message: `Restaurado da nuvem: ${lido.backup.materials.length} materiais, ${baixado.photos} fotos.` };
+  const nuvem = useCloudBackup({
+    snapshot: snapshotBackup,
+    apply: applyBackup,
+    photoIds: () => calculations.filter((item) => item.hasPhoto).map((item) => item.id),
+    notify: setToast,
   });
 
   const updateQuoteNumber = (key: keyof QuoteInput, rawValue: string) => {
@@ -590,14 +555,14 @@ function App() {
             onPrivacy={() => setShowPrivacy(true)}
             cloud={(
               <CloudSection
-                status={cloudState}
-                busy={cloudBusy}
-                onSignIn={(email, senha) => void runCloud(() => cloud.signIn(email, senha))}
-                onSignUp={(email, senha) => void runCloud(() => cloud.signUp(email, senha))}
-                onSignOut={() => void runCloud(async () => { await cloud.signOut(); return { ok: true, message: 'Conta desconectada.' }; })}
-                onUpload={handleCloudUpload}
-                onRestore={handleCloudRestore}
-                onDeleteCloud={() => void runCloud(cloud.deleteCloudBackup)}
+                status={nuvem.status}
+                busy={nuvem.busy}
+                onSignIn={nuvem.signIn}
+                onSignUp={nuvem.signUp}
+                onSignOut={nuvem.signOut}
+                onUpload={nuvem.upload}
+                onRestore={nuvem.restore}
+                onDeleteCloud={nuvem.remove}
               />
             )}
           />
