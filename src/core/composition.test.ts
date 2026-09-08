@@ -4,7 +4,7 @@ import type { QuoteBreakdown } from './types';
 
 const breakdown = (partes: Partial<QuoteBreakdown>): QuoteBreakdown => ({
   filament: 0, energy: 0, machine: 0, labor: 0, maintenance: 0, packaging: 0,
-  totalCost: 0, profit: 0, salePrice: 0, ...partes,
+  totalCost: 0, profit: 0, salePrice: 0, quantity: 1, unitSalePrice: 0, unitCost: 0, ...partes,
 });
 
 describe('costComposition', () => {

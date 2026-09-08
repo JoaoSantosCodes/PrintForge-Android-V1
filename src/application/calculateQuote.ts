@@ -1,5 +1,6 @@
 import { calculatePrice } from '../core/pricing';
 import { fromCents, toCents } from '../core/money';
+import { pieces } from '../core/quantity';
 import type { Material, Printer, QuoteBreakdown, QuoteInput } from '../core/types';
 
 export function calculateQuote(
@@ -18,6 +19,7 @@ export function calculateQuote(
     maintenanceCentsPerHour: toCents(printer.maintenancePerHour),
     packagingCents: toCents(input.packaging),
     marginPercent: BigInt(Math.min(99, Math.max(0, Math.round(input.marginPercent)))),
+    quantity: BigInt(pieces(input.quantity)),
   });
 
   return {
@@ -30,5 +32,8 @@ export function calculateQuote(
     totalCost: fromCents(result.costCents),
     profit: fromCents(result.profitCents),
     salePrice: fromCents(result.salePriceCents),
+    quantity: Number(result.quantity),
+    unitSalePrice: fromCents(result.unitSalePriceCents),
+    unitCost: fromCents(result.unitCostCents),
   };
 }

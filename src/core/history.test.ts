@@ -5,10 +5,10 @@ import type { CalculationRecord } from './types';
 const record = (id: string): CalculationRecord => ({
   id,
   createdAt: `2026-09-0${(Number(id) % 9) + 1}T12:00:00.000Z`,
-  input: { title: `Peça ${id}`, materialId: 'pla', printerId: 'a1', weightGrams: 100, printTimeMinutes: 120, energyPricePerKwh: 1, laborCostPerHour: 25, packaging: 2, marginPercent: 30 },
+  input: { title: `Peça ${id}`, quantity: 1, materialId: 'pla', printerId: 'a1', weightGrams: 100, printTimeMinutes: 120, energyPricePerKwh: 1, laborCostPerHour: 25, packaging: 2, marginPercent: 30 },
   material: { id: 'pla', name: 'PLA', pricePerKg: 120, density: 1.24, createdAt: '2026-01-01T00:00:00.000Z' },
   printer: { id: 'a1', name: 'A1 Mini', powerWatts: 130, machineCostPerHour: 5, maintenancePerHour: 1, createdAt: '2026-01-01T00:00:00.000Z' },
-  breakdown: { filament: 12, energy: 0.3, machine: 10, labor: 50, maintenance: 2, packaging: 2, totalCost: 76.3, profit: 32.7, salePrice: 109 },
+  breakdown: { filament: 12, energy: 0.3, machine: 10, labor: 50, maintenance: 2, packaging: 2, totalCost: 76.3, profit: 32.7, salePrice: 109, quantity: 1, unitSalePrice: 109, unitCost: 76.3 },
 });
 
 const listOf = (n: number) => Array.from({ length: n }, (_, i) => record(String(i)));

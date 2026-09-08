@@ -21,6 +21,8 @@ export function numberValue(value: string): number {
  */
 export function clampNumericField(key: NumericFieldKey, value: number): number {
   if (key === 'marginPercent') return Math.min(99, value);
+  // Pedido de zero peça não é pedido, e o núcleo recusaria o cálculo.
+  if (key === 'quantity') return Math.max(1, Math.floor(value));
   return value;
 }
 

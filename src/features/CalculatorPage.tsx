@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Archive, Calculator, Clock3, Info, Package, Settings, Share2, Sparkles, Zap } from 'lucide-react';
+import { Archive, Calculator, Camera, Clock3, Info, Package, Settings, Share2, Sparkles, Trash2, Zap } from 'lucide-react';
 import { Card, PageHeader, Row } from '../components/ui';
 import { Field, SelectField, TextField } from '../components/fields';
 import { money } from '../core/money';
@@ -10,7 +10,23 @@ import type { Material, Printer as PrinterModel, QuoteInput } from '../core/type
 import type { calculateQuote } from '../application/calculateQuote';
 
 export function quoteText(quote: QuoteInput, material: Material, printer: PrinterModel, result: ReturnType<typeof calculateQuote>): string {
-  return `PRINTFORGE\n─────────────────\nOrçamento: ${quote.title || 'Peça sem nome'}\n\nMaterial: ${material.name}\nImpressora: ${printer.name}\nPeso: ${quote.weightGrams} g\nTempo: ${formatDuration(quote.printTimeMinutes)}\n\nCusto: ${money(result.totalCost)}\nMargem: ${quote.marginPercent}%\nPreço: ${money(result.salePrice)}\n─────────────────\nCalculado pelo PrintForge`;
+  const lote = result.quantity > 1;
+  return `PRINTFORGE
+─────────────────
+Orçamento: ${quote.title || 'Peça sem nome'}
+${lote ? `Quantidade: ${result.quantity} peças
+` : ''}
+Material: ${material.name}
+Impressora: ${printer.name}
+Peso: ${quote.weightGrams} g${lote ? ' por peça' : ''}
+Tempo: ${formatDuration(quote.printTimeMinutes)}${lote ? ' por peça' : ''}
+
+${lote ? `Preço por peça: ${money(result.unitSalePrice)}
+` : ''}Custo: ${money(result.totalCost)}
+Margem: ${quote.marginPercent}%
+Preço${lote ? ' do pedido' : ''}: ${money(result.salePrice)}
+─────────────────
+Calculado pelo PrintForge`;
 }
 
 export function CalculatorPage({
@@ -25,6 +41,9 @@ export function CalculatorPage({
   onTimeChange,
   onSave,
   onShare,
+  photo,
+  onPickPhoto,
+  onRemovePhoto,
 }: {
   quote: QuoteInput;
   result: ReturnType<typeof calculateQuote> | null;
@@ -37,6 +56,9 @@ export function CalculatorPage({
   onTimeChange: (part: 'hours' | 'minutes', value: string) => void;
   onSave: () => void;
   onShare: () => void;
+  photo: string | null;
+  onPickPhoto: () => void;
+  onRemovePhoto: () => void;
 }) {
   const hours = Math.floor(quote.printTimeMinutes / 60);
   const minutes = quote.printTimeMinutes % 60;
@@ -46,12 +68,21 @@ export function CalculatorPage({
         <div className="hero-copy">
           <div className="eyebrow"><Sparkles size={13} /> CÁLCULO ATUAL</div>
           <h1 id="price-heading">{result ? money(result.salePrice) : money(0)}</h1>
-          <p>Preço sugerido com margem de <strong>{quote.marginPercent}%</strong></p>
+          {/*
+            Com mais de uma peça o título passa a ser o total do pedido — é o que o cliente
+            paga — e o unitário vira a linha de apoio. Com uma peça só, os dois são o mesmo
+            número e repetir seria ruído.
+          */}
+          {result && result.quantity > 1
+            ? <p><strong>{money(result.unitSalePrice)}</strong> por peça · {result.quantity} peças · margem de <strong>{quote.marginPercent}%</strong></p>
+            : <p>Preço sugerido com margem de <strong>{quote.marginPercent}%</strong></p>}
         </div>
         <div className="profit-card">
           <span>Lucro estimado</span>
           <strong>{result ? money(result.profit) : money(0)}</strong>
-          <small>por peça</small>
+          {/* `profit` é o lucro do pedido. Com mais de uma peça, dizer "por peça" aqui
+              seria rótulo discordando do número. */}
+          <small>{result && result.quantity > 1 ? 'no pedido' : 'por peça'}</small>
         </div>
       </section>
 
@@ -62,6 +93,7 @@ export function CalculatorPage({
 
       <section className="quote-meta panel-card">
         <TextField label="Nome do cálculo" value={quote.title} onChange={(value) => onQuoteChange({ ...quote, title: value })} />
+        <Field label="Quantidade" value={quote.quantity} mode="integer" onChange={(value) => onNumberChange('quantity', value)} />
         <SelectField label="Material" value={quote.materialId} options={materials.map((item) => ({ value: item.id, label: `${item.name} · ${money(item.pricePerKg)}/kg` }))} onChange={(value) => onQuoteChange({ ...quote, materialId: value })} />
         <SelectField label="Impressora" value={quote.printerId} options={printers.map((item) => ({ value: item.id, label: item.name }))} onChange={(value) => onQuoteChange({ ...quote, printerId: value })} />
       </section>
@@ -89,6 +121,32 @@ export function CalculatorPage({
         </Card>
       </section>
 
+      {/*
+        A foto fica entre os parâmetros e o custo de propósito: ela pertence à descrição do
+        que está sendo orçado, não ao cálculo. Nenhum número depende dela.
+      */}
+      <section className="photo-card">
+        <div className="card-title">
+          <span className="card-icon"><Camera size={18} /></span>
+          <div><h2>Foto da peça</h2><p>Vai junto quando você compartilhar o orçamento</p></div>
+        </div>
+        {photo ? (
+          <div className="photo-preview">
+            <img src={photo} alt="Foto da peça deste orçamento" />
+            <div className="photo-actions">
+              <button className="secondary-button" type="button" onClick={onPickPhoto}>Trocar</button>
+              <button className="secondary-button" type="button" onClick={onRemovePhoto}><Trash2 size={15} /> Remover</button>
+            </div>
+          </div>
+        ) : (
+          <button className="photo-empty" type="button" onClick={onPickPhoto}>
+            <Camera size={22} />
+            <span>Adicionar foto</span>
+            <small>Câmera ou galeria</small>
+          </button>
+        )}
+      </section>
+
       <section className="breakdown-card" aria-labelledby="breakdown-heading">
         <div className="breakdown-header">
           <div><span className="section-kicker">VISÃO FINANCEIRA</span><h2 id="breakdown-heading"><Calculator size={18} /> Composição do custo</h2></div>
@@ -103,7 +161,7 @@ export function CalculatorPage({
           <Row label="Manutenção" value={result?.maintenance ?? 0} />
           <Row label="Embalagem" value={result?.packaging ?? 0} />
         </div>
-        <div className="total-row"><span>Custo total</span><strong>{money(result?.totalCost ?? 0)}</strong></div>
+        <div className="total-row"><span>{result && result.quantity > 1 ? 'Custo do pedido' : 'Custo total'}</span><strong>{money(result?.totalCost ?? 0)}</strong></div>
         <div className="quote-actions"><button className="primary-button save-quote" type="button" onClick={onSave} disabled={!result}><Archive size={16} /> Salvar no histórico</button><button className="secondary-button share-quote" type="button" onClick={onShare} disabled={!result}><Share2 size={16} /> Compartilhar</button></div>
       </section>
     </>

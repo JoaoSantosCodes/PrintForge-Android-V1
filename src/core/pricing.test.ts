@@ -12,6 +12,7 @@ const baseInput: PricingInput = {
   maintenanceCentsPerHour: 100n,
   packagingCents: 200n,
   marginPercent: 30n,
+  quantity: 1n,
 };
 
 const withInput = (changes: Partial<PricingInput>): PricingInput => ({ ...baseInput, ...changes });
@@ -39,4 +40,53 @@ describe('PrintForge pricing core', () => {
   it('rejeita divisor financeiro não aplicável a margem cem', () => expect(() => calculatePrice(withInput({ marginPercent: 100n }))).toThrow());
   it('rejeita custos negativos', () => expect(() => calculatePrice(withInput({ packagingCents: -1n }))).toThrow('Invalid operating costs'));
   it('mantém todos os componentes como bigint', () => { const result = calculatePrice(baseInput); Object.values(result).forEach((value) => expect(typeof value).toBe('bigint')); });
+});
+
+describe('quantidade', () => {
+  it('multiplica as linhas por peça e mantém a embalagem uma vez por pedido', () => {
+    const uma = calculatePrice(baseInput);
+    const cinco = calculatePrice(withInput({ quantity: 5n }));
+
+    expect(cinco.filamentCents).toBe(uma.filamentCents * 5n);
+    expect(cinco.energyCents).toBe(uma.energyCents * 5n);
+    expect(cinco.machineCents).toBe(uma.machineCents * 5n);
+    expect(cinco.maintenanceCents).toBe(uma.maintenanceCents * 5n);
+    expect(cinco.packagingCents).toBe(uma.packagingCents);
+  });
+
+  /**
+   * A consequência que justifica a decisão: com a embalagem diluída no pedido, cinco
+   * peças custam menos que cinco vezes uma. É o que permite dar desconto por lote sem
+   * inventar número.
+   */
+  it('o preço por peça cai conforme a quantidade sobe', () => {
+    const uma = calculatePrice(baseInput);
+    const cinco = calculatePrice(withInput({ quantity: 5n }));
+    expect(cinco.unitSalePriceCents).toBeLessThan(uma.salePriceCents);
+    expect(cinco.salePriceCents).toBeLessThan(uma.salePriceCents * 5n);
+  });
+
+  it('a soma das linhas continua fechando com o custo do pedido', () => {
+    const r = calculatePrice(withInput({ quantity: 7n }));
+    expect(r.costCents).toBe(
+      r.filamentCents + r.energyCents + r.machineCents + r.laborCents + r.maintenanceCents + r.packagingCents,
+    );
+  });
+
+  it('quantidade 1 dá exatamente o mesmo resultado de antes do campo existir', () => {
+    const r = calculatePrice(baseInput);
+    expect(r.unitSalePriceCents).toBe(r.salePriceCents);
+    expect(r.unitCostCents).toBe(r.costCents);
+  });
+
+  it('recusa quantidade menor que 1', () => {
+    expect(() => calculatePrice(withInput({ quantity: 0n }))).toThrow();
+    expect(() => calculatePrice(withInput({ quantity: -1n }))).toThrow();
+  });
+
+  it('não perde centavo ao escalar: a linha é múltiplo exato do valor de uma peça', () => {
+    // 3 pecas de um filamento cujo valor unitario nao e redondo.
+    const r = calculatePrice(withInput({ filamentPriceCentsPerKg: 12345n, weightGrams: 37n, quantity: 3n }));
+    expect(r.filamentCents % 3n).toBe(0n);
+  });
 });

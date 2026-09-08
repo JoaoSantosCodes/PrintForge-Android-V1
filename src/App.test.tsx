@@ -304,3 +304,89 @@ describe('estoque', () => {
     expect(nivel()).toMatch(/1\.000 g de 1\.000 g/);
   });
 });
+
+describe('quantidade', () => {
+  const definirQuantidade = (valor: string) => {
+    irPara('Calcular');
+    fireEvent.change(screen.getByLabelText(/^Quantidade$/i), { target: { value: valor } });
+  };
+
+  it('cinco peças custam menos que cinco vezes uma, porque a embalagem entra uma vez', () => {
+    render(<App />);
+    irPara('Calcular');
+    const umaPeca = screen.getByRole('heading', { level: 1 }).textContent ?? '';
+
+    definirQuantidade('5');
+    const cincoPecas = screen.getByRole('heading', { level: 1 }).textContent ?? '';
+
+    const valor = (texto: string) => Number(texto.replace(/[^\d,]/g, '').replace(',', '.'));
+    expect(valor(cincoPecas)).toBeGreaterThan(valor(umaPeca));
+    expect(valor(cincoPecas)).toBeLessThan(valor(umaPeca) * 5);
+  });
+
+  /**
+   * `profit` sempre foi o lucro do pedido. Enquanto o rótulo dizia "por peça" fixo, com
+   * cinco peças ele anunciava o lucro do lote como se fosse de uma.
+   */
+  it('o rótulo do lucro acompanha o que o número é', () => {
+    render(<App />);
+    irPara('Calcular');
+    expect(screen.getByText(/^por peça$/i)).toBeInTheDocument();
+
+    definirQuantidade('5');
+    expect(screen.getByText(/^no pedido$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^por peça$/i)).not.toBeInTheDocument();
+  });
+
+  it('mostra o preço por peça só quando há mais de uma', () => {
+    render(<App />);
+    irPara('Calcular');
+    expect(screen.queryByText(/por peça · /i)).not.toBeInTheDocument();
+
+    definirQuantidade('5');
+    expect(screen.getByText(/5 peças/i)).toBeInTheDocument();
+  });
+
+  /**
+   * O campo guarda o texto digitado e só volta ao valor do modelo quando perde o foco —
+   * sem isso o clamp reescreveria o que a pessoa está digitando. Aqui o que importa é que
+   * o cálculo nunca use zero: o preço continua o de uma peça enquanto o texto diz 0, e o
+   * campo se corrige ao sair.
+   */
+  it('não calcula pedido de zero peça, e corrige o campo ao sair dele', () => {
+    render(<App />);
+    irPara('Calcular');
+    const umaPeca = screen.getByRole('heading', { level: 1 }).textContent;
+
+    const campo = screen.getByLabelText(/^Quantidade$/i);
+    fireEvent.change(campo, { target: { value: '0' } });
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(umaPeca);
+
+    fireEvent.blur(campo);
+    expect(campo).toHaveValue('1');
+  });
+
+  /**
+   * O botão de baixa e o desconto no estoque tinham que sair do mesmo número. Enquanto o
+   * App multiplicava num lugar e não no outro, o rótulo prometia uma coisa e o saldo
+   * fazia outra.
+   */
+  it('a baixa desconta o pedido inteiro, não uma peça', () => {
+    render(<App />);
+    irPara('Estoque');
+    fireEvent.click(screen.getByRole('button', { name: /Nova bobina/i }));
+    fireEvent.change(screen.getByLabelText(/Peso da bobina/i), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Salvar$/i }));
+
+    definirQuantidade('5');
+    fireEvent.click(screen.getByRole('button', { name: /Salvar no histórico/i }));
+
+    irPara('Histórico');
+    fireEvent.click(screen.getByRole('button', { name: /Dar baixa de 425 g/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Baixar 425 g/i }));
+
+    irPara('Estoque');
+    const rotulo = screen.getByRole('img', { name: /do peso original/i }).getAttribute('aria-label') ?? '';
+    expect(rotulo).toMatch(/575 g de 1\.000 g/);
+  });
+});

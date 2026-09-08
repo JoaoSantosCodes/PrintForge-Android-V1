@@ -33,14 +33,14 @@ export function CatalogPage({ kind, items, showForm, onToggleForm, onRemove, for
       <div className="entity-grid">
         {items.map((item) => materials ? (
           <article className="entity-card" key={item.id}>
-            <div className="entity-top"><span className="entity-icon blue"><Package size={19} /></span><button className="icon-button" type="button" onClick={() => onRemove(item.id)} aria-label={`Remover ${item.name}`}><Trash2 size={16} /></button></div>
+            <div className="entity-top"><span className="entity-icon"><Package size={19} /></span><button className="icon-button" type="button" onClick={() => onRemove(item.id)} aria-label={`Remover ${item.name}`}><Trash2 size={16} /></button></div>
             <h2>{item.name}</h2>
             <div className="entity-primary">{money((item as Material).pricePerKg)}<small>/ kg</small></div>
             <div className="entity-meta"><span>Densidade</span><strong>{(item as Material).density.toFixed(2)} g/cm³</strong></div>
           </article>
         ) : (
           <article className="entity-card" key={item.id}>
-            <div className="entity-top"><span className="entity-icon violet"><Printer size={19} /></span><button className="icon-button" type="button" onClick={() => onRemove(item.id)} aria-label={`Remover ${item.name}`}><Trash2 size={16} /></button></div>
+            <div className="entity-top"><span className="entity-icon"><Printer size={19} /></span><button className="icon-button" type="button" onClick={() => onRemove(item.id)} aria-label={`Remover ${item.name}`}><Trash2 size={16} /></button></div>
             <h2>{item.name}</h2>
             <div className="entity-primary">{(item as PrinterModel).powerWatts}<small> W de potência</small></div>
             <div className="entity-meta"><span>Máquina / hora</span><strong>{money((item as PrinterModel).machineCostPerHour)}</strong></div>

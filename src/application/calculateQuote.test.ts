@@ -21,6 +21,7 @@ const printer: Printer = {
 
 const input: QuoteInput = {
   title: 'Suporte F1',
+  quantity: 1,
   materialId: material.id,
   printerId: printer.id,
   weightGrams: 42,

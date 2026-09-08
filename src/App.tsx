@@ -14,6 +14,8 @@ import { HistoryPage } from './features/HistoryPage';
 import { StockPage } from './features/StockPage';
 import { PrivacyPage, SettingsPage } from './features/SettingsPage';
 import { appendCalculation } from './core/history';
+import { pieces } from './core/quantity';
+import { deletePhoto, pickPhoto, savePhoto, sharePhotoWithText } from './infrastructure/native/photoFile';
 import { addSpool, adjust, consume, removeSpool, type NovaBobina, type StockState } from './application/stock';
 import { backupFileName, createBackup, readBackup } from './application/backup';
 import { exportBackupFile, pickBackupFile } from './infrastructure/native/backupFile';
@@ -80,6 +82,7 @@ function createInitialQuote(): QuoteInput {
   const storedSettings = settingsRepository.get();
   return {
     title: 'Nova peça',
+    quantity: 1,
     materialId: 'material-pla',
     printerId: 'printer-a1-mini',
     weightGrams: 85,
@@ -110,6 +113,14 @@ function App() {
     movements: stockMovementsRepository.get(),
   }));
   const [spoolDraft, setSpoolDraft] = useState<NovaBobina>({ materialId: '', color: '', brand: '', nominalGrams: 1000 });
+  /**
+   * A foto do orçamento em edição, como data URL em memória.
+   *
+   * Não vai para o `localStorage` junto do resto do orçamento: uma imagem em base64
+   * estouraria a cota que o catálogo e o histórico dividem. E só vira arquivo quando o
+   * orçamento é salvo — assim quem tira uma foto e desiste não deixa lixo no aparelho.
+   */
+  const [photoDraft, setPhotoDraft] = useState<string | null>(null);
   const [materialDraft, setMaterialDraft] = useState<MaterialForm>({ name: '', pricePerKg: 120, density: 1.24 });
   const [printerDraft, setPrinterDraft] = useState<PrinterForm>({ name: '', powerWatts: 130, machineCostPerHour: 5, maintenancePerHour: 1 });
 
@@ -276,13 +287,15 @@ function App() {
 
   const saveCalculationToHistory = () => {
     if (!result || !selectedMaterial || !selectedPrinter) return;
+    const id = crypto.randomUUID();
     const record: CalculationRecord = {
-      id: crypto.randomUUID(),
+      id,
       createdAt: new Date().toISOString(),
       input: { ...quote },
       material: { ...selectedMaterial },
       printer: { ...selectedPrinter },
       breakdown: { ...result },
+      hasPhoto: photoDraft !== null,
     };
     const { list, dropped } = appendCalculation(calculations, record);
     if (!calculationsRepository.set(list)) {
@@ -293,6 +306,29 @@ function App() {
     setToast(dropped > 0
       ? `Cálculo salvo. O registro mais antigo saiu do histórico.`
       : 'Cálculo salvo no histórico.');
+
+    // A foto vira arquivo só agora, depois de o registro existir e caber. Se a gravação
+    // falhar, o orçamento continua válido — a foto é apresentação, não dado do negócio.
+    if (photoDraft !== null) {
+      void savePhoto(id, photoDraft).then((gravou) => {
+        if (gravou) return;
+        setCalculations((atual) => {
+          const semFoto = atual.map((item) => (item.id === id ? { ...item, hasPhoto: false } : item));
+          calculationsRepository.set(semFoto);
+          return semFoto;
+        });
+        setToast('O cálculo foi salvo, mas a foto não coube no armazenamento.');
+      });
+    }
+  };
+
+  const handlePickPhoto = async () => {
+    const foto = await pickPhoto();
+    if (foto === null) {
+      setToast('Nenhuma foto foi escolhida.');
+      return;
+    }
+    setPhotoDraft(foto);
   };
 
   const handleSaveMaterial = () => {
@@ -366,10 +402,20 @@ function App() {
             onNumberChange={updateQuoteNumber}
             onTimeChange={updateTime}
             onSave={saveCalculationToHistory}
+            photo={photoDraft}
+            onPickPhoto={() => void handlePickPhoto()}
+            onRemovePhoto={() => setPhotoDraft(null)}
             onShare={async () => {
               if (!result || !selectedMaterial || !selectedPrinter) return;
               const text = quoteText(quote, selectedMaterial, selectedPrinter, result);
-              const outcome = await shareText(`Orçamento · ${quote.title}`, text);
+              const titulo = `Orçamento · ${quote.title}`;
+
+              // Com foto, uma folha só leva imagem e texto. Se o caminho com arquivo não
+              // estiver disponível — web, ou plugin sem resposta — cai no texto, em vez de
+              // falhar e deixar o usuário sem nada.
+              if (photoDraft !== null && await sharePhotoWithText(titulo, text, photoDraft)) return;
+
+              const outcome = await shareText(titulo, text);
               if (outcome === 'copied') setToast('Orçamento copiado para a área de transferência.');
               if (outcome === 'failed') setToast('Não foi possível compartilhar o orçamento.');
             }}
@@ -424,11 +470,13 @@ function App() {
         )}
         {tab === 'history' && (
           <HistoryPage calculations={calculations} spools={stock.spools} movements={stock.movements} onConsume={(calculation, spoolId) => aplicarEstoque(
-            consume(stock, spoolId, calculation.input.weightGrams, {
-              note: calculation.input.title || 'Peça sem nome',
+            consume(stock, spoolId, calculation.input.weightGrams * pieces(calculation.input.quantity), {
+              note: pieces(calculation.input.quantity) > 1
+                ? `${calculation.input.title || 'Peça sem nome'} × ${pieces(calculation.input.quantity)}`
+                : calculation.input.title || 'Peça sem nome',
               calculationId: calculation.id,
             }),
-            `Baixa de ${calculation.input.weightGrams} g registrada.`,
+            `Baixa de ${calculation.input.weightGrams * pieces(calculation.input.quantity)} g registrada.`,
           )} onRemove={(id) => {
             const next = calculations.filter((calculation) => calculation.id !== id);
             if (!calculationsRepository.set(next)) {
@@ -436,6 +484,8 @@ function App() {
               return;
             }
             setCalculations(next);
+            // O arquivo sai junto: sem o registro ninguém mais o alcançaria.
+            if (calculations.find((item) => item.id === id)?.hasPhoto) void deletePhoto(id);
             setToast('Cálculo removido do histórico.');
           }} />
         )}

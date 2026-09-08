@@ -18,6 +18,8 @@ Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho
 | Área | Implementação |
 |---|---|
 | Núcleo financeiro | `bigint` em centavos, arredondamento determinístico, margem sobre preço de venda |
+| Quantidade | Custos por peça multiplicados, embalagem uma vez por pedido |
+| Foto | Uma por orçamento, reduzida a 1280 px, no sistema de arquivos e não no `localStorage` |
 | Entrada | Peso em gramas ou volume em cm³, convertido pela densidade do material |
 | Navegação | Botão voltar do Android e voltar do navegador, pela mesma decisão pura |
 | Resiliência | `ErrorBoundary` na raiz; falha de gravação é reportada, não engolida |
@@ -29,7 +31,7 @@ Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho
 | Barra de status | Aparência declarada em `values/` e `values-night/`, e reaplicada pelo tema escolhido |
 | Análise | Barra de composição do custo, destacando a fatia dominante |
 | Nativo | 6 plugins Capacitor: app, preferences, filesystem, share, splash-screen, status-bar |
-| Testes | 188 no total, 43 montando componentes com Testing Library |
+| Testes | 216 no total, 48 montando componentes com Testing Library |
 | Verificação | APK de release percorrido em emulador Android API 36 |
 
 ## Paleta
@@ -47,6 +49,16 @@ O laranja cru do ícone não vira acento diretamente: ele rende 5,58:1 sobre o f
 Os neutros são carvão com viés quente, e não cinza puro como o do ícone: cinza neutro ao lado de um laranja forte lê como cor que ninguém escolheu.
 
 Todo par texto/superfície foi medido antes de virar CSS — nenhum fica abaixo de 4,5:1, e os tons de apoio não descem de 3:1. O vermelho de erro foi empurrado para o carmim porque, vizinho de laranja, um vermelho alaranjado deixa de comunicar erro. As seis fatias da barra de custo têm escala própria, com o par mais próximo em ΔE 30 no escuro e 28 no claro.
+
+## Quantidade e foto
+
+Um pedido de cinco chaveiros não custa cinco vezes um chaveiro. Filamento, energia, máquina, manutenção e mão de obra multiplicam pela quantidade; a **embalagem entra uma vez por pedido**, porque cinco chaveiros vão no mesmo saquinho. É isso que faz o preço unitário cair conforme a quantidade sobe, e o que justifica desconto por lote sem inventar número.
+
+Cada linha é arredondada por peça e só então multiplicada. Assim o valor de uma peça é exato e o total é múltiplo dele — o cliente pode conferir a conta multiplicando, sem centavo aparecendo do nada. O preço unitário exibido é derivado do total, e não o contrário: com a embalagem diluida, o total não é múltiplo exato do unitário, e o número que vale é o do pedido.
+
+A foto é apresentação: nenhum cálculo depende dela. Vem da câmera ou da galeria por `<input type="file">`, o que abre o seletor do sistema **sem acrescentar permissão alguma ao manifesto**, e é reduzida a 1280 px antes de chegar perto do disco. Fica no sistema de arquivos, e não no `localStorage`, onde disputaria a cota com o catálogo e o histórico. O nome do arquivo deriva do id do orçamento, então apagar o registro sabe qual arquivo remover sem índice à parte.
+
+**As fotos não entram no backup.** O arquivo de backup continua sendo texto leve, que passa em qualquer canal; fotos em base64 o levariam a dezenas de megabytes e o limite chegaria sem aviso. A tela de backup diz isso com todas as letras.
 
 ## Estoque
 
@@ -67,6 +79,8 @@ src/
 │   ├── volume.ts        # conversão volume ⇄ massa
 │   ├── composition.ts   # repartição do custo
 │   ├── stock.ts         # saldo de bobina e compactação do extrato
+│   ├── quantity.ts      # peças do pedido, tolerante a registro antigo
+│   ├── photo.ts         # redução e nomeacao da foto
 │   ├── navigation.ts    # decisão do botão voltar
 │   ├── history.ts       # teto do histórico
 │   ├── theme.ts         # resolução de tema
@@ -80,7 +94,7 @@ src/
 │   └── savePrinter.ts
 ├── infrastructure/
 │   ├── storage/         # repositórios e espelho nativo
-│   └── native/          # hooks de Capacitor e ajuste da barra de status
+│   └── native/          # hooks de Capacitor, barra de status, arquivos e foto
 ├── features/        # uma tela por arquivo
 ├── components/      # primitivas e campos
 ├── App.tsx
