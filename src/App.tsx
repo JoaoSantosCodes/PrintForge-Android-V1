@@ -15,7 +15,7 @@ import { StockPage } from './features/StockPage';
 import { PrivacyPage, SettingsPage } from './features/SettingsPage';
 import { appendCalculation } from './core/history';
 import { pieces } from './core/quantity';
-import { deletePhoto, pickPhoto, savePhoto, sharePhotoWithText } from './infrastructure/native/photoFile';
+import { deletePhoto, photoFromUrl, pickPhoto, savePhoto, sharePhotoWithText } from './infrastructure/native/photoFile';
 import { addSpool, adjust, consume, removeSpool, type NovaBobina, type StockState } from './application/stock';
 import { backupFileName, createBackup, readBackup } from './application/backup';
 import { exportBackupFile, pickBackupFile } from './infrastructure/native/backupFile';
@@ -121,6 +121,7 @@ function App() {
    * orçamento é salvo — assim quem tira uma foto e desiste não deixa lixo no aparelho.
    */
   const [photoDraft, setPhotoDraft] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [materialDraft, setMaterialDraft] = useState<MaterialForm>({ name: '', pricePerKg: 120, density: 1.24 });
   const [printerDraft, setPrinterDraft] = useState<PrinterForm>({ name: '', powerWatts: 130, machineCostPerHour: 5, maintenancePerHour: 1 });
 
@@ -331,6 +332,21 @@ function App() {
     setPhotoDraft(foto);
   };
 
+  const handlePhotoUrl = async (url: string) => {
+    setPhotoBusy(true);
+    try {
+      const resultado = await photoFromUrl(url);
+      if (!resultado.ok) {
+        setToast(resultado.reason);
+        return;
+      }
+      setPhotoDraft(resultado.dataUrl);
+      setToast('Imagem baixada.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   const handleSaveMaterial = () => {
     try {
       const material = saveMaterial(materialDraft);
@@ -404,7 +420,9 @@ function App() {
             onSave={saveCalculationToHistory}
             photo={photoDraft}
             onPickPhoto={() => void handlePickPhoto()}
+            onPhotoUrl={(url) => void handlePhotoUrl(url)}
             onRemovePhoto={() => setPhotoDraft(null)}
+            photoBusy={photoBusy}
             onShare={async () => {
               if (!result || !selectedMaterial || !selectedPrinter) return;
               const text = quoteText(quote, selectedMaterial, selectedPrinter, result);

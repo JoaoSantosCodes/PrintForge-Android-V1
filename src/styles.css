@@ -561,3 +561,7 @@ button:active { transform: scale(.98); }
 .photo-actions { display: flex; gap: 10px; margin-top: 12px; }
 
 .history-photo { display: block; width: 100%; max-height: 220px; object-fit: cover; margin-top: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); }
+.photo-link-toggle { margin-top: 12px; }
+.photo-link { padding-top: 4px; }
+.photo-link-note { margin: 10px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.photo-link .editor-actions { margin-top: 12px; }

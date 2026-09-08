@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Archive, Calculator, Camera, Clock3, Info, Package, Settings, Share2, Sparkles, Trash2, Zap } from 'lucide-react';
+import { Archive, Calculator, Camera, Clock3, Info, Link2, Package, Settings, Share2, Sparkles, Trash2, Zap } from 'lucide-react';
 import { Card, PageHeader, Row } from '../components/ui';
 import { Field, SelectField, TextField } from '../components/fields';
 import { money } from '../core/money';
@@ -43,7 +43,9 @@ export function CalculatorPage({
   onShare,
   photo,
   onPickPhoto,
+  onPhotoUrl,
   onRemovePhoto,
+  photoBusy,
 }: {
   quote: QuoteInput;
   result: ReturnType<typeof calculateQuote> | null;
@@ -58,7 +60,9 @@ export function CalculatorPage({
   onShare: () => void;
   photo: string | null;
   onPickPhoto: () => void;
+  onPhotoUrl: (url: string) => void;
   onRemovePhoto: () => void;
+  photoBusy: boolean;
 }) {
   const hours = Math.floor(quote.printTimeMinutes / 60);
   const minutes = quote.printTimeMinutes % 60;
@@ -139,11 +143,7 @@ export function CalculatorPage({
             </div>
           </div>
         ) : (
-          <button className="photo-empty" type="button" onClick={onPickPhoto}>
-            <Camera size={22} />
-            <span>Adicionar foto</span>
-            <small>Câmera ou galeria</small>
-          </button>
+          <FonteDaFoto onPickPhoto={onPickPhoto} onPhotoUrl={onPhotoUrl} busy={photoBusy} />
         )}
       </section>
 
@@ -257,6 +257,59 @@ function CostBar({ result }: { result: ReturnType<typeof calculateQuote> | null 
           <strong>{dominante.label}</strong> responde por {dominante.percentLabel}% do custo deste orçamento.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * As duas formas de trazer a foto.
+ *
+ * O link vive atrás de um toque, e não lado a lado com o botão de galeria, por uma razão
+ * que não é de espaço: buscar um endereço é a única vez em que este aplicativo fala com
+ * a internet. Quem só quer anexar a foto da própria peça nunca esbarra nisso; quem
+ * escolhe o link vê, antes de confirmar, que o endereço vai ser acessado.
+ */
+function FonteDaFoto({ onPickPhoto, onPhotoUrl, busy }: {
+  onPickPhoto: () => void;
+  onPhotoUrl: (url: string) => void;
+  busy: boolean;
+}) {
+  const [porLink, setPorLink] = useState(false);
+  const [url, setUrl] = useState('');
+
+  if (!porLink) {
+    return (
+      <>
+        <button className="photo-empty" type="button" onClick={onPickPhoto}>
+          <Camera size={22} />
+          <span>Adicionar foto</span>
+          <small>Câmera ou galeria</small>
+        </button>
+        <button className="text-button photo-link-toggle" type="button" onClick={() => setPorLink(true)}>
+          <Link2 size={15} /> Usar um link
+        </button>
+      </>
+    );
+  }
+
+  return (
+    <div className="photo-link">
+      <TextField
+        label="Endereço da imagem"
+        value={url}
+        placeholder="https://drive.google.com/..."
+        onChange={setUrl}
+      />
+      <p className="photo-link-note">
+        Este é o único momento em que o PrintForge acessa a internet. O site da imagem vai
+        ver que este aparelho pediu o arquivo.
+      </p>
+      <div className="editor-actions">
+        <button className="secondary-button" type="button" onClick={() => { setPorLink(false); setUrl(''); }}>Cancelar</button>
+        <button className="primary-button" type="button" disabled={busy || url.trim() === ''} onClick={() => onPhotoUrl(url)}>
+          {busy ? 'Baixando…' : 'Buscar imagem'}
+        </button>
+      </div>
     </div>
   );
 }

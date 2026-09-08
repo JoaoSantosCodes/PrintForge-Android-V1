@@ -19,7 +19,7 @@ Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho
 |---|---|
 | Núcleo financeiro | `bigint` em centavos, arredondamento determinístico, margem sobre preço de venda |
 | Quantidade | Custos por peça multiplicados, embalagem uma vez por pedido |
-| Foto | Uma por orçamento, reduzida a 1280 px, no sistema de arquivos e não no `localStorage` |
+| Foto | Uma por orçamento, da câmera, da galeria ou de um endereço de internet |
 | Entrada | Peso em gramas ou volume em cm³, convertido pela densidade do material |
 | Navegação | Botão voltar do Android e voltar do navegador, pela mesma decisão pura |
 | Resiliência | `ErrorBoundary` na raiz; falha de gravação é reportada, não engolida |
@@ -31,7 +31,7 @@ Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho
 | Barra de status | Aparência declarada em `values/` e `values-night/`, e reaplicada pelo tema escolhido |
 | Análise | Barra de composição do custo, destacando a fatia dominante |
 | Nativo | 6 plugins Capacitor: app, preferences, filesystem, share, splash-screen, status-bar |
-| Testes | 216 no total, 48 montando componentes com Testing Library |
+| Testes | 235 no total, 48 montando componentes com Testing Library |
 | Verificação | APK de release percorrido em emulador Android API 36 |
 
 ## Paleta
@@ -58,6 +58,10 @@ Cada linha é arredondada por peça e só então multiplicada. Assim o valor de 
 
 A foto é apresentação: nenhum cálculo depende dela. Vem da câmera ou da galeria por `<input type="file">`, o que abre o seletor do sistema **sem acrescentar permissão alguma ao manifesto**, e é reduzida a 1280 px antes de chegar perto do disco. Fica no sistema de arquivos, e não no `localStorage`, onde disputaria a cota com o catálogo e o histórico. O nome do arquivo deriva do id do orçamento, então apagar o registro sabe qual arquivo remover sem índice à parte.
 
+A foto também pode vir de um endereço de internet, porque quem manda a foto de uma peça costuma mandar um link do Drive. **Essa é a única requisição de saída que o aplicativo faz**, ela só acontece por ação explícita, e está dita na política de privacidade e na própria tela — um app que se anuncia offline não pode abrir conexão em silêncio.
+
+Três coisas tornam isso utilizável. O link de compartilhar do Drive é uma página HTML, não o arquivo, então `normalizeImageUrl` o converte para o endereço que serve o binário (o mesmo vale para o Dropbox). No Android a busca vai por `CapacitorHttp`, que faz a requisição pelo sistema e não pela WebView — sem isso, quase todo host barraria por CORS; no navegador não há essa saída, e a recusa é relatada como tal. E o que voltou é conferido pelos primeiros bytes, não pelo `content-type`: um arquivo privado do Drive responde 200 com a página de login, e a mensagem de erro aponta permissão em vez de dizer apenas "não é uma imagem".
+
 **As fotos não entram no backup.** O arquivo de backup continua sendo texto leve, que passa em qualquer canal; fotos em base64 o levariam a dezenas de megabytes e o limite chegaria sem aviso. A tela de backup diz isso com todas as letras.
 
 ## Estoque
@@ -81,6 +85,7 @@ src/
 │   ├── stock.ts         # saldo de bobina e compactação do extrato
 │   ├── quantity.ts      # peças do pedido, tolerante a registro antigo
 │   ├── photo.ts         # redução e nomeacao da foto
+│   ├── imageUrl.ts      # normalização de link e detecção de imagem
 │   ├── navigation.ts    # decisão do botão voltar
 │   ├── history.ts       # teto do histórico
 │   ├── theme.ts         # resolução de tema
