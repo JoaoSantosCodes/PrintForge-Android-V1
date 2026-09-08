@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { maskDecimal, maskInteger } from '../core/input';
 
-export function TextField({ label, value, placeholder, onChange }: { label: string; value: string; placeholder?: string; onChange: (value: string) => void }) {
-  return <label className="field"><span>{label}</span><input type="text" value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} /></label>;
+export function TextField({ label, value, placeholder, onChange, type = 'text' }: { label: string; value: string; placeholder?: string; onChange: (value: string) => void; type?: 'text' | 'password' }) {
+  return <label className="field"><span>{label}</span><input type={type} value={value} placeholder={placeholder} autoComplete={type === 'password' ? 'current-password' : undefined} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
 /**

@@ -14,3 +14,4 @@ android/.idea/
 
 # Materiais da ficha da Play Store — imagens grandes, mantidas fora do repositório.
 store-assets/
+.env

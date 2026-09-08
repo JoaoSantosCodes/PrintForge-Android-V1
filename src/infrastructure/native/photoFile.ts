@@ -1,5 +1,6 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import {
   looksLikeImage,
   MAX_DOWNLOAD_BYTES,
@@ -138,7 +139,6 @@ export async function sharePhotoWithText(title: string, text: string, dataUrl: s
   if (Capacitor.getPlatform() === 'web') return false;
 
   try {
-    const { Share } = await import('@capacitor/share');
     const nome = `orcamento-${Date.now()}.jpg`;
     await Filesystem.writeFile({
       path: nome,

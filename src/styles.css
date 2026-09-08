@@ -565,3 +565,10 @@ button:active { transform: scale(.98); }
 .photo-link { padding-top: 4px; }
 .photo-link-note { margin: 10px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
 .photo-link .editor-actions { margin-top: 12px; }
+
+/* ---------- cópia na nuvem ---------- */
+
+.cloud-status { margin-bottom: 14px; }
+.cloud-warning { margin: -4px 0 10px; color: var(--danger); font-size: 12px; }
+.cloud-account { margin-top: 14px; justify-content: space-between; }
+.cloud-danger { color: var(--danger); }
