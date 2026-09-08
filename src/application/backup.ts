@@ -1,13 +1,23 @@
 import type { CalculationRecord, Material, Printer, StoredSettings } from '../core/types';
+import type { Spool, StockMovement } from '../core/stock';
 import {
   isCalculationList,
   isMaterialList,
+  isMovementList,
   isPrinterList,
   isSettings,
+  isSpoolList,
 } from '../infrastructure/storage/LocalStorageRepository';
 
-/** Sobe quando o formato mudar de um jeito que versões antigas não leriam. */
-export const BACKUP_VERSION = 1;
+/**
+ * Sobe quando o formato mudar de um jeito que versões antigas não leriam.
+ *
+ * 2 acrescentou estoque. Um backup v1 continua válido e entra com estoque vazio — quem
+ * exportou antes do estoque existir não pode ser punido por isso. O caminho contrário
+ * segue recusado: um app v1 lendo um arquivo v2 recusa por versão futura, o que é melhor
+ * que importar pela metade e perder as bobinas em silêncio.
+ */
+export const BACKUP_VERSION = 2;
 
 export type Backup = {
   app: 'printforge';
@@ -17,6 +27,8 @@ export type Backup = {
   materials: Material[];
   printers: Printer[];
   calculations: CalculationRecord[];
+  spools: Spool[];
+  stockMovements: StockMovement[];
 };
 
 export type BackupContents = Omit<Backup, 'app' | 'version' | 'exportedAt'>;
@@ -73,6 +85,13 @@ export function readBackup(raw: string): ReadResult {
   if (!isPrinterList(data.printers)) return { ok: false, reason: 'A lista de impressoras do backup está corrompida.' };
   if (!isCalculationList(data.calculations)) return { ok: false, reason: 'O histórico do backup está corrompido.' };
 
+  // Ausentes num backup v1, e isso não é corrupção: o estoque ainda não existia. Presentes
+  // e malformados, aí sim é recusa, com mensagem própria como as demais.
+  const spools = data.spools === undefined ? [] : data.spools;
+  const stockMovements = data.stockMovements === undefined ? [] : data.stockMovements;
+  if (!isSpoolList(spools)) return { ok: false, reason: 'A lista de bobinas do backup está corrompida.' };
+  if (!isMovementList(stockMovements)) return { ok: false, reason: 'O extrato de estoque do backup está corrompido.' };
+
   return {
     ok: true,
     backup: {
@@ -83,6 +102,8 @@ export function readBackup(raw: string): ReadResult {
       materials: data.materials,
       printers: data.printers,
       calculations: data.calculations,
+      spools,
+      stockMovements,
     },
   };
 }

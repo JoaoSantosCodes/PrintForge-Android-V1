@@ -1,4 +1,4 @@
-export type Tab = 'home' | 'calc' | 'materials' | 'printers' | 'history' | 'settings';
+export type Tab = 'home' | 'calc' | 'materials' | 'printers' | 'stock' | 'history' | 'settings';
 
 /** Estado que o botão voltar precisa consultar para decidir o que desfazer. */
 export type BackState = {
@@ -7,11 +7,13 @@ export type BackState = {
   showPrivacy: boolean;
   showMaterialForm: boolean;
   showPrinterForm: boolean;
+  showSpoolForm: boolean;
 };
 
 export type BackAction =
   | { type: 'closeMaterialForm' }
   | { type: 'closePrinterForm' }
+  | { type: 'closeSpoolForm' }
   | { type: 'closePrivacy' }
   | { type: 'popTab'; tab: Tab }
   | { type: 'goHome' }
@@ -27,6 +29,7 @@ export type BackAction =
 export function resolveBackAction(state: BackState): BackAction {
   if (state.showMaterialForm) return { type: 'closeMaterialForm' };
   if (state.showPrinterForm) return { type: 'closePrinterForm' };
+  if (state.showSpoolForm) return { type: 'closeSpoolForm' };
   if (state.showPrivacy) return { type: 'closePrivacy' };
   if (state.tabHistory.length > 0) {
     return { type: 'popTab', tab: state.tabHistory[state.tabHistory.length - 1] };

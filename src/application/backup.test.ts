@@ -6,6 +6,8 @@ const contents: BackupContents = {
   materials: [{ id: 'pla', name: 'PLA', pricePerKg: 120, density: 1.24, createdAt: '2026-01-01T00:00:00.000Z' }],
   printers: [{ id: 'a1', name: 'A1 Mini', powerWatts: 130, machineCostPerHour: 5, maintenancePerHour: 1, createdAt: '2026-01-01T00:00:00.000Z' }],
   calculations: [],
+  spools: [{ id: 'bobina-1', materialId: 'pla', color: 'Preto', brand: 'Voolt', nominalGrams: 1000, baselineGrams: 1000, createdAt: '2026-09-01T00:00:00.000Z' }],
+  stockMovements: [{ id: 'mov-1', spoolId: 'bobina-1', kind: 'out', grams: 128, createdAt: '2026-09-07T00:00:00.000Z', note: 'Case Raspberry Pi' }],
 };
 
 const round = (value: BackupContents) => readBackup(JSON.stringify(createBackup(value)));
@@ -33,6 +35,53 @@ describe('readBackup', () => {
     expect(result.backup.materials).toEqual(contents.materials);
     expect(result.backup.printers).toEqual(contents.printers);
     expect(result.backup.settings).toEqual(contents.settings);
+  });
+
+  /**
+   * A versão 1 do backup é anterior ao estoque. Recusar esses arquivos puniria quem
+   * exportou antes da funcionalidade existir — justamente as pessoas que o backup
+   * deveria proteger.
+   */
+  it('aceita um backup da versão 1, que não tinha estoque', () => {
+    const v1 = {
+      app: 'printforge',
+      version: 1,
+      exportedAt: '2026-09-04T10:00:00.000Z',
+      settings: contents.settings,
+      materials: contents.materials,
+      printers: contents.printers,
+      calculations: [],
+    };
+    const result = readBackup(JSON.stringify(v1));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.backup.spools).toEqual([]);
+    expect(result.backup.stockMovements).toEqual([]);
+    expect(result.backup.materials).toEqual(contents.materials);
+  });
+
+  it('preserva bobinas e extrato na ida e volta', () => {
+    const result = round(contents);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.backup.spools).toEqual(contents.spools);
+    expect(result.backup.stockMovements).toEqual(contents.stockMovements);
+  });
+
+  it('recusa bobinas malformadas com mensagem própria', () => {
+    const quebrado = { ...createBackup(contents), spools: [{ id: 'x' }] };
+    const result = readBackup(JSON.stringify(quebrado));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toContain('bobinas');
+  });
+
+  it('recusa extrato malformado com mensagem própria', () => {
+    const quebrado = { ...createBackup(contents), stockMovements: [{ id: 'x', spoolId: 'y', kind: 'entrada' }] };
+    const result = readBackup(JSON.stringify(quebrado));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toContain('extrato');
   });
 
   it('rejeita JSON inválido explicando o que fazer', () => {

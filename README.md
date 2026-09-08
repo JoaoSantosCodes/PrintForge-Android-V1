@@ -23,12 +23,13 @@ Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho
 | Resiliência | `ErrorBoundary` na raiz; falha de gravação é reportada, não engolida |
 | Persistência | `localStorage` com validação de schema, espelhado em `SharedPreferences` no Android |
 | Histórico | Teto de 500 registros, cada um com snapshot completo do que foi orçado |
-| Backup | Exportar e importar JSON, com validação e mensagem própria por tipo de recusa |
+| Estoque | Bobinas com saldo, baixa explícita a partir do histórico e correção por balança |
+| Backup | Exportar e importar JSON, versão 2, com validação e mensagem própria por tipo de recusa |
 | Aparência | Paleta ancorada no ícone — carvão quente e laranja — em tokens por papel, tema claro e escuro |
 | Barra de status | Aparência declarada em `values/` e `values-night/`, e reaplicada pelo tema escolhido |
 | Análise | Barra de composição do custo, destacando a fatia dominante |
 | Nativo | 6 plugins Capacitor: app, preferences, filesystem, share, splash-screen, status-bar |
-| Testes | 143 no total, 37 montando componentes com Testing Library |
+| Testes | 188 no total, 43 montando componentes com Testing Library |
 | Verificação | APK de release percorrido em emulador Android API 36 |
 
 ## Paleta
@@ -47,6 +48,14 @@ Os neutros são carvão com viés quente, e não cinza puro como o do ícone: ci
 
 Todo par texto/superfície foi medido antes de virar CSS — nenhum fica abaixo de 4,5:1, e os tons de apoio não descem de 3:1. O vermelho de erro foi empurrado para o carmim porque, vizinho de laranja, um vermelho alaranjado deixa de comunicar erro. As seis fatias da barra de custo têm escala própria, com o par mais próximo em ΔE 30 no escuro e 28 no claro.
 
+## Estoque
+
+Orçar não é imprimir. Um orçamento pode nunca virar peça, e a mesma peça pode ser impressa dez vezes — por isso salvar no histórico **não** mexe no estoque. A baixa vem de um toque explícito em "dar baixa" no registro do histórico, e pode ser repetida a cada reimpressão.
+
+O saldo de uma bobina é sempre `baselineGrams` mais os movimentos dela; não existe um campo de saldo que possa divergir do extrato. Quando o extrato passa do teto, os movimentos mais antigos são dobrados no `baselineGrams` antes de sair — cortar a cauda como o histórico faz devolveria filamento já gasto, porque são as saídas que descontam.
+
+Uma baixa maior que o saldo é recusada com a falta em gramas, em vez de deixar o número negativo. Para o caso em que a estimativa do fatiador divergiu do real, existe a correção por balança, que registra a diferença como movimento em vez de sobrescrever o saldo.
+
 ## Arquitetura
 
 ```text
@@ -57,6 +66,7 @@ src/
 │   ├── input.ts         # máscaras decimal e inteira
 │   ├── volume.ts        # conversão volume ⇄ massa
 │   ├── composition.ts   # repartição do custo
+│   ├── stock.ts         # saldo de bobina e compactação do extrato
 │   ├── navigation.ts    # decisão do botão voltar
 │   ├── history.ts       # teto do histórico
 │   ├── theme.ts         # resolução de tema
@@ -65,6 +75,7 @@ src/
 ├── application/     # casos de uso
 │   ├── calculateQuote.ts
 │   ├── backup.ts
+│   ├── stock.ts
 │   ├── saveMaterial.ts
 │   └── savePrinter.ts
 ├── infrastructure/
@@ -87,6 +98,8 @@ A interface `StorageRepository<T>` mantém a persistência desacoplada do domín
 | `printforge.materials` | Catálogo de materiais |
 | `printforge.printers` | Catálogo de impressoras |
 | `printforge.calculations` | Histórico, cada item com snapshot de input, material, impressora e resultado |
+| `printforge.spools` | Bobinas: material, cor, marca, peso de fábrica e saldo de partida |
+| `printforge.stockMovements` | Extrato de baixas e ajustes, cada saída ligada ao orçamento que a gerou |
 | `printforge.theme` | Preferência de tema deste aparelho — fora do backup de propósito |
 
 ## Desenvolvimento web

@@ -1,4 +1,5 @@
 import type { CalculationRecord, Material, Printer, StoredSettings } from '../../core/types';
+import type { Spool, StockMovement } from '../../core/stock';
 import { createStorageRepository, type StorageValidator } from './Storage';
 
 export const STORAGE_KEYS = {
@@ -6,6 +7,8 @@ export const STORAGE_KEYS = {
   materials: 'printforge.materials',
   printers: 'printforge.printers',
   calculations: 'printforge.calculations',
+  spools: 'printforge.spools',
+  stockMovements: 'printforge.stockMovements',
 } as const;
 
 const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
@@ -30,7 +33,26 @@ const isCalculation: StorageValidator<CalculationRecord> = (value): value is Cal
   return typeof item.id === 'string' && typeof item.createdAt === 'string' && !!item.input && !!item.material && !!item.printer && !!item.breakdown;
 };
 
+const isSpool: StorageValidator<Spool> = (value): value is Spool => {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.id === 'string' && typeof item.materialId === 'string'
+    && typeof item.color === 'string' && typeof item.brand === 'string'
+    && isFiniteNumber(item.nominalGrams) && isFiniteNumber(item.baselineGrams)
+    && typeof item.createdAt === 'string';
+};
+const isMovement: StorageValidator<StockMovement> = (value): value is StockMovement => {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.id === 'string' && typeof item.spoolId === 'string'
+    && (item.kind === 'out' || item.kind === 'adjust')
+    && isFiniteNumber(item.grams) && typeof item.createdAt === 'string'
+    && typeof item.note === 'string';
+};
+
 export const isMaterialList: StorageValidator<Material[]> = (value): value is Material[] => Array.isArray(value) && value.every(isMaterial);
+export const isSpoolList: StorageValidator<Spool[]> = (value): value is Spool[] => Array.isArray(value) && value.every(isSpool);
+export const isMovementList: StorageValidator<StockMovement[]> = (value): value is StockMovement[] => Array.isArray(value) && value.every(isMovement);
 export const isPrinterList: StorageValidator<Printer[]> = (value): value is Printer[] => Array.isArray(value) && value.every(isPrinter);
 export const isCalculationList: StorageValidator<CalculationRecord[]> = (value): value is CalculationRecord[] => Array.isArray(value) && value.every(isCalculation);
 
@@ -74,3 +96,5 @@ export const settingsRepository = {
 export const materialsRepository = createStorageRepository<Material[]>(STORAGE_KEYS.materials, [], isMaterialList);
 export const printersRepository = createStorageRepository<Printer[]>(STORAGE_KEYS.printers, [], isPrinterList);
 export const calculationsRepository = createStorageRepository<CalculationRecord[]>(STORAGE_KEYS.calculations, [], isCalculationList);
+export const spoolsRepository = createStorageRepository<Spool[]>(STORAGE_KEYS.spools, [], isSpoolList);
+export const stockMovementsRepository = createStorageRepository<StockMovement[]>(STORAGE_KEYS.stockMovements, [], isMovementList);

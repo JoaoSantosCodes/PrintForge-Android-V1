@@ -216,3 +216,91 @@ describe('composição do custo', () => {
     expect(screen.queryByRole('img', { name: /Filamento/i })).not.toBeInTheDocument();
   });
 });
+
+/**
+ * O caminho inteiro do estoque, do jeito que ele foi decidido: a bobina entra cheia,
+ * salvar um orçamento não mexe em nada, e só o toque explícito em "dar baixa" desconta.
+ */
+describe('estoque', () => {
+  /**
+   * O saldo e o peso original exibem o mesmo texto numa bobina cheia, então procurar
+   * "1.000 g" acha dois elementos. O rótulo da barra de nível diz os dois de uma vez e é
+   * único por bobina — é o alvo certo, e de quebra checa a acessibilidade da barra.
+   */
+  const nivel = () => screen.getByRole('img', { name: /do peso original/i }).getAttribute('aria-label') ?? '';
+
+  const cadastrarBobina = (gramas = '1000') => {
+    irPara('Estoque');
+    fireEvent.click(screen.getByRole('button', { name: /Nova bobina/i }));
+    fireEvent.change(screen.getByLabelText(/^Cor$/i), { target: { value: 'Preto' } });
+    fireEvent.change(screen.getByLabelText(/Peso da bobina/i), { target: { value: gramas } });
+    fireEvent.click(screen.getByRole('button', { name: /^Salvar$/i }));
+  };
+
+  it('cadastra uma bobina cheia', () => {
+    render(<App />);
+    cadastrarBobina();
+    expect(nivel()).toMatch(/100% do peso original, 1\.000 g de 1\.000 g/);
+  });
+
+  it('salvar um orçamento não mexe no estoque', () => {
+    render(<App />);
+    cadastrarBobina();
+    irPara('Calcular');
+    fireEvent.click(screen.getByRole('button', { name: /Salvar no histórico/i }));
+    irPara('Estoque');
+    expect(nivel()).toMatch(/1\.000 g de 1\.000 g/);
+  });
+
+  it('a baixa a partir do histórico desconta o peso do orçamento', () => {
+    render(<App />);
+    cadastrarBobina();
+    irPara('Calcular');
+    fireEvent.click(screen.getByRole('button', { name: /Salvar no histórico/i }));
+    irPara('Histórico');
+
+    fireEvent.click(screen.getByRole('button', { name: /Dar baixa de 85 g/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Baixar 85 g/i }));
+
+    irPara('Estoque');
+    expect(nivel()).toMatch(/915 g de 1\.000 g/);
+  });
+
+  it('recusa a baixa que não cabe na bobina, sem alterar o saldo', () => {
+    render(<App />);
+    cadastrarBobina('50');
+    irPara('Calcular');
+    fireEvent.click(screen.getByRole('button', { name: /Salvar no histórico/i }));
+    irPara('Histórico');
+
+    fireEvent.click(screen.getByRole('button', { name: /Dar baixa de 85 g/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Baixar 85 g/i }));
+
+    expect(screen.getByRole('status')).toHaveTextContent(/faltam 35 g/i);
+    irPara('Estoque');
+    expect(nivel()).toMatch(/100% do peso original, 50 g de 50 g/);
+  });
+
+  it('avisa quando a bobina está acabando', () => {
+    render(<App />);
+    cadastrarBobina('100');
+    irPara('Calcular');
+    fireEvent.click(screen.getByRole('button', { name: /Salvar no histórico/i }));
+    irPara('Histórico');
+    fireEvent.click(screen.getByRole('button', { name: /Dar baixa de 85 g/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Baixar 85 g/i }));
+
+    irPara('Estoque');
+    expect(screen.getByText(/está acabando/i)).toBeInTheDocument();
+  });
+
+  it('o estoque sobrevive a recarregar o app', () => {
+    const primeira = render(<App />);
+    cadastrarBobina();
+    primeira.unmount();
+
+    render(<App />);
+    irPara('Estoque');
+    expect(nivel()).toMatch(/1\.000 g de 1\.000 g/);
+  });
+});

@@ -7,11 +7,22 @@ const base: BackState = {
   showPrivacy: false,
   showMaterialForm: false,
   showPrinterForm: false,
+  showSpoolForm: false,
 };
 
 describe('resolveBackAction', () => {
   it('encerra o app na tela inicial sem histórico', () => {
     expect(resolveBackAction(base)).toEqual({ type: 'exit' });
+  });
+
+  it('fecha o formulário de bobina antes de desfazer navegação', () => {
+    const state = { ...base, tab: 'stock' as const, tabHistory: ['home' as const], showSpoolForm: true };
+    expect(resolveBackAction(state)).toEqual({ type: 'closeSpoolForm' });
+  });
+
+  it('formulário de material ainda vence o de bobina, se os dois estiverem abertos', () => {
+    const state = { ...base, showMaterialForm: true, showSpoolForm: true };
+    expect(resolveBackAction(state)).toEqual({ type: 'closeMaterialForm' });
   });
 
   it('fecha o formulário aberto antes de qualquer navegação', () => {

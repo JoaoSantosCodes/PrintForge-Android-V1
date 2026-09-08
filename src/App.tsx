@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Calculator, Check, History, LayoutDashboard, Package, Printer, Settings } from 'lucide-react';
+import { Boxes, Calculator, Check, History, LayoutDashboard, Package, Printer, Settings } from 'lucide-react';
 import { calculateQuote } from './application/calculateQuote';
 import { deleteMaterial, saveMaterial, type MaterialDraft } from './application/saveMaterial';
 import { deletePrinter, savePrinter, type PrinterDraft } from './application/savePrinter';
@@ -11,8 +11,10 @@ import { CalculatorPage, quoteText } from './features/CalculatorPage';
 import { CatalogPage, MaterialEditor, PrinterEditor } from './features/CatalogPage';
 import { DashboardPage } from './features/DashboardPage';
 import { HistoryPage } from './features/HistoryPage';
+import { StockPage } from './features/StockPage';
 import { PrivacyPage, SettingsPage } from './features/SettingsPage';
 import { appendCalculation } from './core/history';
+import { addSpool, adjust, consume, removeSpool, type NovaBobina, type StockState } from './application/stock';
 import { backupFileName, createBackup, readBackup } from './application/backup';
 import { exportBackupFile, pickBackupFile } from './infrastructure/native/backupFile';
 import { resolveBackAction, type Tab } from './core/navigation';
@@ -26,6 +28,8 @@ import {
   materialsRepository,
   printersRepository,
   settingsRepository,
+  spoolsRepository,
+  stockMovementsRepository,
 } from './infrastructure/storage/LocalStorageRepository';
 import './styles.css';
 
@@ -100,6 +104,12 @@ function App() {
   const [toast, setToast] = useState('');
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [showPrinterForm, setShowPrinterForm] = useState(false);
+  const [showSpoolForm, setShowSpoolForm] = useState(false);
+  const [stock, setStock] = useState<StockState>(() => ({
+    spools: spoolsRepository.get(),
+    movements: stockMovementsRepository.get(),
+  }));
+  const [spoolDraft, setSpoolDraft] = useState<NovaBobina>({ materialId: '', color: '', brand: '', nominalGrams: 1000 });
   const [materialDraft, setMaterialDraft] = useState<MaterialForm>({ name: '', pricePerKg: 120, density: 1.24 });
   const [printerDraft, setPrinterDraft] = useState<PrinterForm>({ name: '', powerWatts: 130, machineCostPerHour: 5, maintenancePerHour: 1 });
 
@@ -112,7 +122,7 @@ function App() {
 
   const handleExportBackup = async () => {
     try {
-      const backup = createBackup({ settings, materials, printers, calculations });
+      const backup = createBackup({ settings, materials, printers, calculations, spools: stock.spools, stockMovements: stock.movements });
       await exportBackupFile(backupFileName(), JSON.stringify(backup, null, 2));
       setToast('Backup gerado.');
     } catch {
@@ -134,7 +144,9 @@ function App() {
     const saved = settingsRepository.set(backup.settings)
       && materialsRepository.set(backup.materials)
       && printersRepository.set(backup.printers)
-      && calculationsRepository.set(backup.calculations);
+      && calculationsRepository.set(backup.calculations)
+      && spoolsRepository.set(backup.spools)
+      && stockMovementsRepository.set(backup.stockMovements);
 
     if (!saved) {
       setToast('O backup foi lido, mas não coube no armazenamento do aparelho.');
@@ -145,7 +157,8 @@ function App() {
     setMaterials(backup.materials);
     setPrinters(backup.printers);
     setCalculations(backup.calculations);
-    setToast(`Backup restaurado: ${backup.materials.length} materiais, ${backup.printers.length} impressoras.`);
+    setStock({ spools: backup.spools, movements: backup.stockMovements });
+    setToast(`Backup restaurado: ${backup.materials.length} materiais, ${backup.printers.length} impressoras, ${backup.spools.length} bobinas.`);
   };
 
   const goToTab = (next: Tab) => {
@@ -157,12 +170,13 @@ function App() {
 
   // Ordem de precedencia do botao voltar: primeiro fecha o que esta por cima,
   // depois desfaz a navegacao, e so entao deixa o app encerrar.
-  const backState = { tab, tabHistory, showPrivacy, showMaterialForm, showPrinterForm };
+  const backState = { tab, tabHistory, showPrivacy, showMaterialForm, showPrinterForm, showSpoolForm };
   const handleBack = () => {
     const action = resolveBackAction(backState);
     switch (action.type) {
       case 'closeMaterialForm': setShowMaterialForm(false); return true;
       case 'closePrinterForm': setShowPrinterForm(false); return true;
+      case 'closeSpoolForm': setShowSpoolForm(false); return true;
       case 'closePrivacy': setShowPrivacy(false); return true;
       case 'popTab':
         setTab(action.tab);
@@ -204,6 +218,40 @@ function App() {
     const timer = window.setTimeout(() => setToast(''), 2600);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  // O estoque grava as duas chaves juntas: um saldo so faz sentido com o extrato que o
+  // explica, e gravar so metade deixaria os dois em desacordo depois de um recarregamento.
+  const stockWarned = useRef(false);
+  useEffect(() => {
+    if (spoolsRepository.set(stock.spools) && stockMovementsRepository.set(stock.movements)) return;
+    if (stockWarned.current) return;
+    stockWarned.current = true;
+    setToast('O estoque não está sendo salvo: o armazenamento do aparelho está cheio.');
+  }, [stock]);
+
+  const aplicarEstoque = (resultado: ReturnType<typeof consume>, sucesso: string) => {
+    if (!resultado.ok) {
+      setToast(resultado.reason);
+      return;
+    }
+    setStock(resultado.state);
+    setToast(resultado.compacted > 0
+      ? `${sucesso} ${resultado.compacted} movimentos antigos foram resumidos no saldo.`
+      : sucesso);
+  };
+
+  const handleSaveSpool = () => {
+    const material = materials.find((item) => item.id === spoolDraft.materialId) ?? materials[0];
+    const resultado = addSpool(stock, { ...spoolDraft, materialId: material?.id ?? '' });
+    if (!resultado.ok) {
+      setToast(resultado.reason);
+      return;
+    }
+    setStock(resultado.state);
+    setShowSpoolForm(false);
+    setSpoolDraft({ materialId: '', color: '', brand: '', nominalGrams: 1000 });
+    setToast('Bobina cadastrada.');
+  };
 
   const updateQuoteNumber = (key: keyof QuoteInput, rawValue: string) => {
     setQuote((current) => ({ ...current, [key]: clampNumericField(key, numberValue(rawValue)) }));
@@ -361,8 +409,27 @@ function App() {
             )}
           />
         )}
+        {tab === 'stock' && (
+          <StockPage
+            stock={stock}
+            materials={materials}
+            showForm={showSpoolForm}
+            onToggleForm={() => setShowSpoolForm((current) => !current)}
+            draft={spoolDraft.materialId ? spoolDraft : { ...spoolDraft, materialId: materials[0]?.id ?? '' }}
+            onDraftChange={setSpoolDraft}
+            onSaveSpool={handleSaveSpool}
+            onRemoveSpool={(id) => aplicarEstoque(removeSpool(stock, id), 'Bobina removida.')}
+            onAdjust={(id, medido) => aplicarEstoque(adjust(stock, id, medido), 'Inventário corrigido.')}
+          />
+        )}
         {tab === 'history' && (
-          <HistoryPage calculations={calculations} onRemove={(id) => {
+          <HistoryPage calculations={calculations} spools={stock.spools} movements={stock.movements} onConsume={(calculation, spoolId) => aplicarEstoque(
+            consume(stock, spoolId, calculation.input.weightGrams, {
+              note: calculation.input.title || 'Peça sem nome',
+              calculationId: calculation.id,
+            }),
+            `Baixa de ${calculation.input.weightGrams} g registrada.`,
+          )} onRemove={(id) => {
             const next = calculations.filter((calculation) => calculation.id !== id);
             if (!calculationsRepository.set(next)) {
               setToast('Não foi possível remover: o armazenamento do aparelho não respondeu.');
@@ -382,6 +449,7 @@ function App() {
         <NavButton active={tab === 'calc'} icon={<Calculator />} label="Calcular" onClick={() => goToTab('calc')} />
         <NavButton active={tab === 'materials'} icon={<Package />} label="Materiais" onClick={() => goToTab('materials')} />
         <NavButton active={tab === 'printers'} icon={<Printer />} label="Impressoras" onClick={() => goToTab('printers')} />
+        <NavButton active={tab === 'stock'} icon={<Boxes />} label="Estoque" onClick={() => goToTab('stock')} />
         <NavButton active={tab === 'history'} icon={<History />} label="Histórico" onClick={() => goToTab('history')} />
         <NavButton active={tab === 'settings'} icon={<Settings />} label="Ajustes" onClick={() => goToTab('settings')} />
       </nav>
