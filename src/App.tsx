@@ -457,23 +457,23 @@ function App() {
         */}
         {sobreposta ? (
           showAccount && nuvem.status !== null ? (
-
-                  <AccountPage
-                    status={nuvem.status}
-                    busy={nuvem.busy}
-                    onBack={() => setShowAccount(false)}
-                    onSignIn={nuvem.signIn}
-                    onSignUp={nuvem.signUp}
-                    onSignOut={nuvem.signOut}
-                    onUpload={nuvem.upload}
-                    onRestore={nuvem.restore}
-                    onDeleteCloud={nuvem.remove}
-                  />
+            <AccountPage
+              status={nuvem.status}
+              busy={nuvem.busy}
+              onBack={() => setShowAccount(false)}
+              onSignIn={nuvem.signIn}
+              onSignUp={nuvem.signUp}
+              onSignOut={nuvem.signOut}
+              onUpload={nuvem.upload}
+              onRestore={nuvem.restore}
+              onDeleteCloud={nuvem.remove}
+            />
           ) : <PrivacyPage onBack={() => setShowPrivacy(false)} />
         ) : (<>
-        {tab === 'home' ? (
+        {tab === 'home' && (
           <DashboardPage calculations={calculations} materialCount={materials.length} printerCount={printers.length} spools={stock.spools} movements={stock.movements} onNewQuote={() => goToTab('calc')} onHistory={() => goToTab('history')} />
-        ) : tab === 'calc' && (
+        )}
+        {tab === 'calc' && (
           <CalculatorPage
             quote={quote}
             result={result}

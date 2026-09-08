@@ -516,9 +516,10 @@ button:active { transform: scale(.98); }
 .unit-toggle { align-self: flex-start; margin-top: 2px; padding: 6px 0; min-height: 32px; background: none; border: none; color: var(--accent); font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .unit-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
-/* Controle segmentado do tema. Três alvos de toque de 44px, lado a lado. */
+/* Controle segmentado do tema, três alvos lado a lado. A altura vem da regra de
+   alvos de toque mais abaixo — aqui ficava um 40px que contradizia este comentario. */
 .theme-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface-input); }
-.theme-switch button { min-height: 40px; padding: 0 10px; color: var(--text-muted); border: 0; border-radius: 9px; background: transparent; font-size: 12px; font-weight: 700; transition: color .15s, background .15s; }
+.theme-switch button { padding: 0 10px; color: var(--text-muted); border: 0; border-radius: 9px; background: transparent; font-size: 12px; font-weight: 700; transition: color .15s, background .15s; }
 .theme-switch button:hover { color: var(--text-strong); }
 .theme-switch button.active { color: var(--accent-ink); background: var(--accent); }
 .theme-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -568,10 +569,21 @@ button:active { transform: scale(.98); }
  * precisa das duas coisas: flex por dentro, para o alvo de 44 px, e uma linha so por
  * fora. `width: fit-content` da isso sem voltar a `block`, que quebraria o alinhamento.
  */
-.text-button, .back-button { position: relative; min-height: 44px; display: inline-flex; align-items: center; }
+.text-button, .back-button, .unit-toggle { position: relative; min-height: 44px; display: inline-flex; align-items: center; }
 .back-button { display: flex; width: fit-content; }
 .bottom-nav button { min-height: 48px; }
-.field input, .field select { min-height: 42px; }
+/*
+ * Os dois botoes mais tocados do aplicativo ficaram de fora da passada da Fase 6.
+ *
+ * Medido: 38px de altura em "Novo orçamento", "Salvar no histórico", "Compartilhar",
+ * "Exportar backup" — os alvos que a pessoa acerta o dia inteiro. O seletor de tema
+ * estava em 40px e o "Informar por volume" em 32px, o menor de todos.
+ *
+ * 44px e a marca que o resto do arquivo ja usa. Nos campos, 44 cabe dentro do
+ * `min-height: 46px` da linha `.field`, entao o desenho nao muda — so a area sensivel.
+ */
+.primary-button, .secondary-button, .theme-switch button { min-height: 44px; }
+.field input, .field select { min-height: 44px; }
 
 /* Foco visível em tudo que recebe teclado — antes só alguns controles tinham. */
 :where(button, input, select, a):focus-visible {
