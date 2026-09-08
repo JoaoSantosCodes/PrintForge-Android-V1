@@ -18,16 +18,22 @@
 <body>
   <div class="brand">PRINTFORGE 3D</div>
   <h1>Política de Privacidade</h1>
-  <p class="updated">Última atualização: 7 de setembro de 2026</p>
-  <p>O PrintForge é uma ferramenta offline para cálculo de custos e preços de impressão 3D. Na versão atual, o aplicativo não exige criação de conta.</p>
+  <p class="updated">Última atualização: 8 de setembro de 2026</p>
+  <p>O PrintForge é uma ferramenta offline para cálculo de custos e preços de impressão 3D. O aplicativo funciona por completo sem conta; criar uma serve apenas para guardar uma cópia dos dados na nuvem, o que é opcional.</p>
   <h2>Dados armazenados</h2>
   <p>O aplicativo armazena localmente no dispositivo os dados inseridos pelo usuário, incluindo materiais, impressoras, parâmetros, configurações, históricos de cálculo e o controle de estoque — as bobinas cadastradas e o extrato de baixas e ajustes de cada uma.</p>
   <h2>Transmissão de dados</h2>
-  <p>O PrintForge não envia esses dados para servidores externos. Não há analytics, rastreamento nem publicidade. A função de compartilhamento apenas entrega o orçamento ao recurso do sistema operacional escolhido pelo usuário.</p>
+  <p>Por padrão o PrintForge não envia dado algum para servidores externos: não há analytics, rastreamento nem publicidade, e a função de compartilhamento apenas entrega o orçamento ao recurso do sistema operacional escolhido pelo usuário. As duas únicas exceções dependem de ação explícita do usuário e estão descritas nas seções seguintes.</p>
+  <h2>Cópia na nuvem (opcional)</h2>
+  <p>O aplicativo oferece guardar uma cópia dos seus dados em servidor, para não perder nada ao trocar de aparelho. <strong>Isso é opcional e não acontece sozinho.</strong> Nada é enviado a menos que o usuário crie uma conta e toque em “Enviar para a nuvem”. Quem nunca criar conta usa o aplicativo inteiro sem que dado algum saia do aparelho.</p>
+  <p><strong>O que é enviado:</strong> materiais, impressoras, parâmetros, histórico de cálculos, controle de estoque e as fotos anexadas aos orçamentos. <strong>O que é guardado da conta:</strong> o endereço de e-mail e a senha, esta última em formato irreversível, usados apenas para autenticar.</p>
+  <p><strong>Onde ficam:</strong> em infraestrutura da Supabase, com banco de dados e arquivos hospedados na região de São Paulo, Brasil.</p>
+  <p><strong>Quem acessa:</strong> apenas a própria conta. O servidor aplica regras por usuário que restringem cada arquivo ao seu dono; um usuário não consegue ler, alterar nem apagar a cópia de outro. Não há analytics, rastreamento nem publicidade, e os dados não são compartilhados com terceiros nem usados para qualquer finalidade além de devolvê-los ao próprio usuário.</p>
+  <p><strong>Como apagar:</strong> o botão “Apagar a cópia da nuvem”, na tela de configurações, remove o arquivo e as fotos do servidor. Para apagar também a conta, use o contato informado ao fim desta página.</p>
   <h2>Acesso à internet</h2>
   <p>O PrintForge funciona sem conexão. Há uma única exceção, e ela só acontece por ação explícita do usuário: ao anexar a foto de um orçamento por endereço de internet, o aplicativo baixa a imagem daquele endereço. Nesse momento o servidor que hospeda a imagem — Google Drive, Dropbox ou qualquer outro escolhido pelo usuário — registra a requisição e o endereço IP do aparelho, como acontece em qualquer acesso a um site. Nenhum dado do orçamento, do catálogo ou do estoque acompanha essa requisição: o aplicativo apenas pede o arquivo de imagem. Quem anexa fotos pela câmera ou pela galeria nunca aciona esse caminho.</p>
   <h2>Armazenamento no aparelho</h2>
-  <p>No Android, os dados são gravados no armazenamento do próprio aplicativo e replicados no armazenamento nativo do sistema, para que não se percam caso o Android descarte os dados do navegador embutido. Nada disso sai do aparelho.</p>
+  <p>No Android, os dados são gravados no armazenamento do próprio aplicativo e replicados no armazenamento nativo do sistema, para que não se percam caso o Android descarte os dados do navegador embutido. Nada disso sai do aparelho, exceto pela cópia na nuvem descrita acima, quando o usuário a solicita.</p>
   <h2>Backup e restauração</h2>
   <p>O aplicativo permite exportar um arquivo com materiais, impressoras, configurações, histórico e estoque. O arquivo é gerado no próprio aparelho e entregue à folha de compartilhamento do sistema, onde o usuário escolhe o destino — nuvem, mensageiro ou armazenamento local. O PrintForge não envia esse arquivo a lugar algum nem tem acesso ao destino escolhido. A importação lê um arquivo indicado pelo usuário e substitui os dados locais.</p>
   <h2>Controle e exclusão</h2>
