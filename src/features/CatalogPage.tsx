@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { Package, Printer, Trash2 } from 'lucide-react';
-import { EditorCard, EmptyState, PageHeader } from '../components/ui';
+import { EditorCard, EmptyState, ExternalLink, PageHeader } from '../components/ui';
 import { Field, TextField } from '../components/fields';
 import { numberValue } from '../core/input';
+import { linkLabel, safeExternalUrl } from '../core/link';
 import type { MaterialDraft } from '../application/saveMaterial';
 import type { PrinterDraft } from '../application/savePrinter';
 import { money } from '../core/money';
@@ -37,6 +38,7 @@ export function CatalogPage({ kind, items, showForm, onToggleForm, onRemove, for
             <h2>{item.name}</h2>
             <div className="entity-primary">{money((item as Material).pricePerKg)}<small>/ kg</small></div>
             <div className="entity-meta"><span>Densidade</span><strong>{(item as Material).density.toFixed(2)} g/cm³</strong></div>
+            <LinkDeCompra url={(item as Material).purchaseUrl} />
           </article>
         ) : (
           <article className="entity-card" key={item.id}>
@@ -58,6 +60,7 @@ export function MaterialEditor({ draft, onChange, onCancel, onSave }: { draft: M
     <TextField label="Nome" value={draft.name} placeholder="Ex.: PLA Matte" onChange={(value) => onChange({ ...draft, name: value })} />
     <Field label="Preço (R$/kg)" value={draft.pricePerKg} onChange={(value) => onChange({ ...draft, pricePerKg: numberValue(value) })} />
     <Field label="Densidade (g/cm³)" value={draft.density} onChange={(value) => onChange({ ...draft, density: numberValue(value) })} />
+    <TextField label="Link de compra" value={draft.purchaseUrl ?? ''} placeholder="voolt3d.com.br/petg" onChange={(value) => onChange({ ...draft, purchaseUrl: value })} />
   </EditorCard>;
 }
 
@@ -68,4 +71,18 @@ export function PrinterEditor({ draft, onChange, onCancel, onSave }: { draft: Pr
     <Field label="Custo de máquina (R$/h)" value={draft.machineCostPerHour} onChange={(value) => onChange({ ...draft, machineCostPerHour: numberValue(value) })} />
     <Field label="Manutenção (R$/h)" value={draft.maintenancePerHour} onChange={(value) => onChange({ ...draft, maintenancePerHour: numberValue(value) })} />
   </EditorCard>;
+}
+
+/**
+ * O link de compra de um material.
+ *
+ * Valida de novo na hora de exibir, e não só ao salvar: um catálogo restaurado de backup
+ * antigo, ou editado fora do app, pode trazer qualquer coisa no campo. Um `href` só é
+ * seguro se a validação estiver do lado que renderiza.
+ */
+function LinkDeCompra({ url }: { url?: string }) {
+  if (!url) return null;
+  const conferido = safeExternalUrl(url);
+  if (!conferido.ok) return null;
+  return <div className="entity-link"><ExternalLink url={conferido.url}>Comprar em {linkLabel(conferido.url)}</ExternalLink></div>;
 }

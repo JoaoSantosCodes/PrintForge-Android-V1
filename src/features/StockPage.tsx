@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { AlertTriangle, Boxes, Scale, Trash2 } from 'lucide-react';
-import { EditorCard, EmptyState, PageHeader } from '../components/ui';
+import { EditorCard, EmptyState, ExternalLink, PageHeader } from '../components/ui';
 import { Field, SelectField, TextField } from '../components/fields';
 import { numberValue } from '../core/input';
 import { formatDate } from '../core/format';
+import { linkLabel, safeExternalUrl } from '../core/link';
 import { LOW_STOCK_FRACTION, lowSpools, spoolBalances, type SpoolBalance, type StockMovement } from '../core/stock';
 import type { NovaBobina } from '../application/stock';
 import type { Material } from '../core/types';
@@ -39,6 +40,7 @@ export function StockPage({
   const saldos = spoolBalances(stock.spools, stock.movements);
   const acabando = lowSpools(saldos);
   const nomePorId = new Map(materials.map((item) => [item.id, item.name]));
+  const materiais = new Map(materials.map((item) => [item.id, item]));
 
   return (
     <>
@@ -80,6 +82,7 @@ export function StockPage({
             key={saldo.spool.id}
             saldo={saldo}
             materialName={nomePorId.get(saldo.spool.materialId)}
+            purchaseUrl={materiais.get(saldo.spool.materialId)?.purchaseUrl}
             movements={stock.movements}
             onRemove={() => onRemoveSpool(saldo.spool.id)}
             onAdjust={(medido) => onAdjust(saldo.spool.id, medido)}
@@ -102,9 +105,10 @@ export function StockPage({
   );
 }
 
-function SpoolCard({ saldo, materialName, movements, onRemove, onAdjust }: {
+function SpoolCard({ saldo, materialName, purchaseUrl, movements, onRemove, onAdjust }: {
   saldo: SpoolBalance;
   materialName?: string;
+  purchaseUrl?: string;
   movements: StockMovement[];
   onRemove: () => void;
   onAdjust: (medido: number) => void;
@@ -156,6 +160,13 @@ function SpoolCard({ saldo, materialName, movements, onRemove, onAdjust }: {
         </button>
       )}
 
+      {/*
+        O link de recompra aparece quando a bobina esta acabando, e nao sempre. Esse e o
+        momento em que ele serve: ver o nivel baixo e poder comprar sem sair procurando
+        onde foi que comprou da ultima vez.
+      */}
+      {fraction <= 0.25 && <ComprarMais url={purchaseUrl} materialName={materialName} />}
+
       {extrato.length > 0 && (
         <ul className="spool-log">
           {extrato.map((movimento) => (
@@ -167,5 +178,18 @@ function SpoolCard({ saldo, materialName, movements, onRemove, onAdjust }: {
         </ul>
       )}
     </article>
+  );
+}
+
+function ComprarMais({ url, materialName }: { url?: string; materialName?: string }) {
+  if (!url) return null;
+  const conferido = safeExternalUrl(url);
+  if (!conferido.ok) return null;
+  return (
+    <div className="spool-buy">
+      <ExternalLink url={conferido.url}>
+        Comprar mais {materialName ?? 'filamento'} em {linkLabel(conferido.url)}
+      </ExternalLink>
+    </div>
   );
 }

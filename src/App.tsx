@@ -126,7 +126,7 @@ function App() {
    */
   const [photoDraft, setPhotoDraft] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
-  const [materialDraft, setMaterialDraft] = useState<MaterialForm>({ name: '', pricePerKg: 120, density: 1.24 });
+  const [materialDraft, setMaterialDraft] = useState<MaterialForm>({ name: '', pricePerKg: 120, density: 1.24, purchaseUrl: '' });
   const [printerDraft, setPrinterDraft] = useState<PrinterForm>({ name: '', powerWatts: 130, machineCostPerHour: 5, maintenancePerHour: 1 });
 
   const selectedMaterial = materials.find((material) => material.id === quote.materialId) ?? materials[0];
@@ -395,7 +395,7 @@ function App() {
       const material = saveMaterial(materialDraft);
       setMaterials(materialsRepository.get());
       setQuote((current) => ({ ...current, materialId: material.id }));
-      setMaterialDraft({ name: '', pricePerKg: 120, density: 1.24 });
+      setMaterialDraft({ name: '', pricePerKg: 120, density: 1.24, purchaseUrl: '' });
       setShowMaterialForm(false);
       setToast(`${material.name} adicionado ao catálogo.`);
     } catch (error) {

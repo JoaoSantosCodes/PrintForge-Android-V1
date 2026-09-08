@@ -474,3 +474,54 @@ describe('telas sobrepostas', () => {
     expect(screen.getByRole('heading', { name: /Parâmetros padrão/i })).toBeInTheDocument();
   });
 });
+
+describe('links', () => {
+  const cadastrarMaterial = (link: string) => {
+    irPara('Materiais');
+    fireEvent.click(screen.getByRole('button', { name: /Novo material/i }));
+    fireEvent.change(screen.getByLabelText(/^Nome$/i), { target: { value: 'PETG Voolt' } });
+    fireEvent.change(screen.getByLabelText(/Link de compra/i), { target: { value: link } });
+    fireEvent.click(screen.getByRole('button', { name: /^Salvar$/i }));
+  };
+
+  it('mostra o link de compra no cartao do material', () => {
+    render(<App />);
+    cadastrarMaterial('voolt3d.com.br/petg/cores-solidas/');
+
+    const link = screen.getByRole('link', { name: /Comprar em voolt3d\.com\.br/i });
+    expect(link).toHaveAttribute('href', 'https://voolt3d.com.br/petg/cores-solidas/');
+    expect(link).toHaveAttribute('target', '_blank');
+    // Sem isto a aba aberta recebe window.opener e pode redirecionar a pagina de origem.
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  /**
+   * O teste que justifica a validacao existir: um `javascript:` chegando ao `href`
+   * executaria no contexto do aplicativo, com acesso ao localStorage onde moram catalogo,
+   * historico e estoque.
+   */
+  it('recusa um link que executaria codigo, sem cadastrar o material', () => {
+    render(<App />);
+    cadastrarMaterial('javascript:alert(1)');
+
+    expect(screen.getByRole('status')).toHaveTextContent(/Link de compra/i);
+    expect(screen.queryByText(/PETG Voolt/)).not.toBeInTheDocument();
+  });
+
+  it('o link do modelo aparece no orcamento e nao no texto compartilhado', () => {
+    render(<App />);
+    irPara('Calcular');
+    fireEvent.change(screen.getByLabelText(/Link do modelo/i), {
+      target: { value: 'https://makerworld.com/pt/models/2789940' },
+    });
+    expect(screen.getByRole('link', { name: /Abrir em makerworld\.com/i })).toBeInTheDocument();
+  });
+
+  it('avisa quando o link do modelo nao serve, em vez de virar link quebrado', () => {
+    render(<App />);
+    irPara('Calcular');
+    fireEvent.change(screen.getByLabelText(/Link do modelo/i), { target: { value: 'loja' } });
+    expect(screen.getByText(/Falta o domínio/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Abrir em/i })).not.toBeInTheDocument();
+  });
+});

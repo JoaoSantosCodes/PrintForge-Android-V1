@@ -1,3 +1,4 @@
+import { safeExternalUrl } from '../core/link';
 import type { Material } from '../core/types';
 import { materialsRepository } from '../infrastructure/storage/LocalStorageRepository';
 
@@ -10,8 +11,19 @@ export function saveMaterial(draft: MaterialDraft): Material {
     throw new Error('Preço e densidade devem ser maiores que zero.');
   }
 
+  // O link e opcional; digitado, precisa ser um endereco de site de verdade. Validar
+  // aqui, e nao na tela, mantem a regra num lugar so — e e ela que impede um
+  // `javascript:` de chegar ao `href` do cartao.
+  let purchaseUrl: string | undefined;
+  if (draft.purchaseUrl && draft.purchaseUrl.trim() !== '') {
+    const conferido = safeExternalUrl(draft.purchaseUrl);
+    if (!conferido.ok) throw new Error(`Link de compra: ${conferido.reason}`);
+    purchaseUrl = conferido.url;
+  }
+
   const material: Material = {
     ...draft,
+    purchaseUrl,
     name,
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),

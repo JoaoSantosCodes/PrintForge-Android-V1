@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Check, Plus, X } from 'lucide-react';
+import { Check, ExternalLink as ExternalLinkIcon, Plus, X } from 'lucide-react';
 import { money } from '../core/money';
 
 /** Primitivas de layout compartilhadas entre as telas. */
@@ -30,4 +30,25 @@ export function StatCard({ icon, label, value, detail }: { icon: ReactNode; labe
 
 export function EditorCard({ title, children, onCancel, onSave }: { title: string; children: ReactNode; onCancel: () => void; onSave: () => void }) {
   return <section className="editor-card"><div className="editor-heading"><div><span className="section-kicker">CADASTRO</span><h2>{title}</h2></div><button className="icon-button" type="button" onClick={onCancel} aria-label="Fechar formulário"><X size={17} /></button></div><div className="editor-fields">{children}</div><div className="editor-actions"><button className="secondary-button" type="button" onClick={onCancel}>Cancelar</button><button className="primary-button" type="button" onClick={onSave}><Check size={15} /> Salvar</button></div></section>;
+}
+
+/**
+ * Link para fora do aplicativo.
+ *
+ * `target="_blank"` porque o bridge do Capacitor entrega a um alvo desses ao navegador do
+ * sistema — sem isso o site abriria dentro da WebView e prenderia o usuário numa tela sem
+ * barra de endereço nem botão de voltar do navegador.
+ *
+ * `rel="noopener noreferrer"` porque uma aba aberta assim recebe `window.opener` e pode
+ * redirecionar a página de origem. Aqui a origem é o próprio aplicativo.
+ *
+ * O `href` já vem validado por `safeExternalUrl`: sem isso, um `javascript:` digitado no
+ * cadastro executaria no contexto do app.
+ */
+export function ExternalLink({ url, children, className }: { url: string; children: ReactNode; className?: string }) {
+  return (
+    <a className={className ?? 'text-button'} href={url} target="_blank" rel="noopener noreferrer">
+      {children} <ExternalLinkIcon size={13} />
+    </a>
+  );
 }

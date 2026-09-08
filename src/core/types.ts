@@ -3,6 +3,11 @@ export type Material = {
   name: string;
   pricePerKg: number;
   density: number;
+  /**
+   * Onde recomprar. Opcional, e ausente em catálogos anteriores ao campo — o validador
+   * não o exige, então backup antigo continua entrando.
+   */
+  purchaseUrl?: string;
   createdAt: string;
 };
 
@@ -22,6 +27,8 @@ export type QuoteInput = {
    * `pieces()` ao ler um registro do histórico, nunca o valor cru.
    */
   quantity: number;
+  /** De onde veio o modelo. Não acompanha o texto compartilhado com o cliente. */
+  modelUrl?: string;
   materialId: string;
   printerId: string;
   weightGrams: number;

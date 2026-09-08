@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { Archive, Calculator, Camera, Clock3, Info, Link2, Package, Settings, Share2, Sparkles, Trash2, Zap } from 'lucide-react';
-import { Card, PageHeader, Row } from '../components/ui';
+import { Card, ExternalLink, PageHeader, Row } from '../components/ui';
 import { Field, SelectField, TextField } from '../components/fields';
 import { money } from '../core/money';
 import { gramsFromVolume, roundForField, volumeFromGrams } from '../core/volume';
 import { costComposition, dominantSlice } from '../core/composition';
+import { linkLabel, safeExternalUrl } from '../core/link';
 import { formatDuration } from '../core/format';
 import type { Material, Printer as PrinterModel, QuoteInput } from '../core/types';
 import type { calculateQuote } from '../application/calculateQuote';
@@ -100,6 +101,8 @@ export function CalculatorPage({
         <Field label="Quantidade" value={quote.quantity} mode="integer" onChange={(value) => onNumberChange('quantity', value)} />
         <SelectField label="Material" value={quote.materialId} options={materials.map((item) => ({ value: item.id, label: `${item.name} · ${money(item.pricePerKg)}/kg` }))} onChange={(value) => onQuoteChange({ ...quote, materialId: value })} />
         <SelectField label="Impressora" value={quote.printerId} options={printers.map((item) => ({ value: item.id, label: item.name }))} onChange={(value) => onQuoteChange({ ...quote, printerId: value })} />
+        <TextField label="Link do modelo" value={quote.modelUrl ?? ''} placeholder="makerworld.com/models/..." onChange={(value) => onQuoteChange({ ...quote, modelUrl: value })} />
+        <LinkDoModelo url={quote.modelUrl} />
       </section>
 
       <section className="cards-grid" aria-label="Parâmetros de cálculo">
@@ -312,4 +315,18 @@ function FonteDaFoto({ onPickPhoto, onPhotoUrl, busy }: {
       </div>
     </div>
   );
+}
+
+/**
+ * O link do modelo, validado na hora de exibir.
+ *
+ * Fica fora do texto compartilhado por decisão do dono do projeto: modelo do MakerWorld
+ * costuma ser gratuito, e mandar o endereço junto do preço mostra ao cliente que ele pode
+ * baixar sozinho. O que se cobra é a impressão, mas nem todo cliente enxerga assim.
+ */
+function LinkDoModelo({ url }: { url?: string }) {
+  if (!url || url.trim() === '') return null;
+  const conferido = safeExternalUrl(url);
+  if (!conferido.ok) return <p className="cloud-warning">{conferido.reason}</p>;
+  return <div className="entity-link"><ExternalLink url={conferido.url}>Abrir em {linkLabel(conferido.url)}</ExternalLink></div>;
 }
