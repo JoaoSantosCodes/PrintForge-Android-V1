@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CloudUpload, LogOut } from 'lucide-react';
 import { TextField } from '../components/fields';
-import { describeStatus, looksLikeEmail, passwordProblem, type CloudStatus } from '../core/cloudBackup';
+import { describeStatus, emailsConferem, looksLikeEmail, passwordProblem, type CloudStatus } from '../core/cloudBackup';
 
 /**
  * Backup na nuvem, na tela de ajustes e abaixo do backup em arquivo.
@@ -80,12 +80,19 @@ function FormularioDeConta({ busy, onSignIn, onSignUp }: {
   onSignUp: (email: string, senha: string) => void;
 }) {
   const [email, setEmail] = useState('');
+  const [confirmacao, setConfirmacao] = useState('');
   const [senha, setSenha] = useState('');
   const [criando, setCriando] = useState(false);
 
   const emailInvalido = email !== '' && !looksLikeEmail(email);
   const problemaDaSenha = senha === '' ? null : passwordProblem(senha);
-  const podeEnviar = !busy && looksLikeEmail(email) && passwordProblem(senha) === null;
+  // A conferência só vale no cadastro: quem está entrando já tem a conta, e pedir o
+  // endereço duas vezes ali seria atrito sem propósito.
+  const confirmacaoDivergente = criando && confirmacao !== '' && !emailsConferem(email, confirmacao);
+  const podeEnviar = !busy
+    && looksLikeEmail(email)
+    && passwordProblem(senha) === null
+    && (!criando || emailsConferem(email, confirmacao));
 
   return (
     <>
@@ -96,6 +103,13 @@ function FormularioDeConta({ busy, onSignIn, onSignUp }: {
         recuperar, porque a recuperação vai justamente para o endereço errado.
       */}
       {emailInvalido && <p className="cloud-warning">Esse e-mail não parece completo.</p>}
+
+      {criando && (
+        <>
+          <TextField label="Repita o e-mail" value={confirmacao} placeholder="o mesmo endereço" onChange={setConfirmacao} />
+          {confirmacaoDivergente && <p className="cloud-warning">Os dois e-mails estão diferentes.</p>}
+        </>
+      )}
 
       <TextField label="Senha" value={senha} placeholder="pelo menos 6 caracteres" onChange={setSenha} type="password" />
       {problemaDaSenha && <p className="cloud-warning">{problemaDaSenha}</p>}
@@ -109,7 +123,7 @@ function FormularioDeConta({ busy, onSignIn, onSignUp }: {
         >
           {busy ? 'Aguarde…' : criando ? 'Criar conta' : 'Entrar'}
         </button>
-        <button className="secondary-button" type="button" onClick={() => setCriando((atual) => !atual)}>
+        <button className="secondary-button" type="button" onClick={() => { setCriando((atual) => !atual); setConfirmacao(''); }}>
           {criando ? 'Já tenho conta' : 'Criar uma conta'}
         </button>
       </div>
@@ -117,6 +131,7 @@ function FormularioDeConta({ busy, onSignIn, onSignUp }: {
       <p className="settings-hint">
         A conta serve só para guardar sua cópia. O aplicativo funciona inteiro sem ela, e
         nada é enviado sem você tocar em “Enviar para a nuvem”.
+        {criando && ' Confira o e-mail com atenção: é por ele que você recupera a senha.'}
       </p>
     </>
   );

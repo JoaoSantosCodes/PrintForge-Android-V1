@@ -95,3 +95,18 @@ export function passwordProblem(value: string): string | null {
   if (value.length < MIN_PASSWORD) return `A senha precisa de pelo menos ${MIN_PASSWORD} caracteres.`;
   return null;
 }
+
+/**
+ * Compara os dois campos de e-mail do cadastro.
+ *
+ * A confirmação por e-mail está desligada no projeto, o que torna o cadastro imediato —
+ * e tira a rede que pegava endereço digitado errado. Sem ela, um erro de digitação cria
+ * uma conta que a pessoa nunca recupera: a redefinição de senha iria para o endereço
+ * errado, que provavelmente nem existe.
+ *
+ * Digitar duas vezes é a defesa mais barata contra isso. Compara sem diferenciar
+ * maiúsculas nem espaços nas pontas, porque aí não há erro nenhum a apontar.
+ */
+export function emailsConferem(primeiro: string, segundo: string): boolean {
+  return primeiro.trim().toLowerCase() === segundo.trim().toLowerCase();
+}

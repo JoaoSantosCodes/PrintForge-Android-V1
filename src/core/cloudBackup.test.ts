@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cloudPath,
+  emailsConferem,
   cloudPhotoPath,
   describeStatus,
   looksLikeEmail,
@@ -99,5 +100,30 @@ describe('passwordProblem', () => {
 
   it('aceita senha no limite', () => {
     expect(passwordProblem('123456')).toBeNull();
+  });
+});
+
+describe('emailsConferem', () => {
+  /**
+   * Existe porque a confirmação por e-mail está desligada: sem ela, digitar errado no
+   * cadastro cria uma conta irrecuperável, já que a redefinição de senha iria para o
+   * endereço errado.
+   */
+  it('aceita iguais', () => {
+    expect(emailsConferem('joao@exemplo.com', 'joao@exemplo.com')).toBe(true);
+  });
+
+  it('ignora maiúsculas e espaços nas pontas, que não são erro de digitação', () => {
+    expect(emailsConferem('Joao@Exemplo.com', ' joao@exemplo.com ')).toBe(true);
+  });
+
+  it('pega a letra trocada, que é o caso que importa', () => {
+    expect(emailsConferem('joao@exemplo.com', 'joao@exemlpo.com')).toBe(false);
+  });
+
+  it('não considera dois vazios como conferência válida na tela', () => {
+    // Iguais entre si, mas a tela só libera o botão com o e-mail também válido.
+    expect(emailsConferem('', '')).toBe(true);
+    expect(looksLikeEmail('')).toBe(false);
   });
 });
