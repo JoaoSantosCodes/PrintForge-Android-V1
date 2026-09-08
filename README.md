@@ -31,7 +31,8 @@ Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho
 | Barra de status | Aparência declarada em `values/` e `values-night/`, e reaplicada pelo tema escolhido |
 | Análise | Barra de composição do custo, destacando a fatia dominante |
 | Nativo | 6 plugins Capacitor: app, preferences, filesystem, share, splash-screen, status-bar |
-| Testes | 235 no total, 48 montando componentes com Testing Library |
+| Cópia na nuvem | Opcional, por conta, com políticas de RLS por usuário |
+| Testes | 251 no total, 48 montando componentes com Testing Library |
 | Verificação | APK de release percorrido em emulador Android API 36 |
 
 ## Paleta
@@ -49,6 +50,18 @@ O laranja cru do ícone não vira acento diretamente: ele rende 5,58:1 sobre o f
 Os neutros são carvão com viés quente, e não cinza puro como o do ícone: cinza neutro ao lado de um laranja forte lê como cor que ninguém escolheu.
 
 Todo par texto/superfície foi medido antes de virar CSS — nenhum fica abaixo de 4,5:1, e os tons de apoio não descem de 3:1. O vermelho de erro foi empurrado para o carmim porque, vizinho de laranja, um vermelho alaranjado deixa de comunicar erro. As seis fatias da barra de custo têm escala própria, com o par mais próximo em ΔE 30 no escuro e 28 no claro.
+
+## Cópia na nuvem
+
+Opcional, e desligada por padrão. Sem as variáveis de ambiente o aplicativo compila e funciona inteiro — a seção some da tela em vez de aparecer desabilitada, e a biblioteca do Supabase **não entra no pacote**: o Vite substitui `import.meta.env` em tempo de compilação, o `import()` dinâmico fica inalcançável e o Rollup o remove. Compilando com credenciais, a biblioteca vai para um pedaço separado de 228 kB que só baixa quando alguém abre a seção.
+
+É backup, e não sincronização: enviar e restaurar, manual, um arquivo por conta, o último envio vence. Restaurar da nuvem passa pelo mesmo `readBackup` do arquivo local, com as mesmas recusas por tipo — um caminho de validação só.
+
+```bash
+cp .env.example .env   # e preencha URL e chave
+```
+
+**As políticas de RLS são a proteção, não a chave.** A chave publicavel vai dentro do APK e qualquer pessoa a extrai com um descompactador; o que separa os dados de um usuário dos de outro são as políticas em `supabase/migrations/`. O caminho é `{user_id}/...` porque a política compara o primeiro segmento com o dono da sessão, e um teste fixa esse formato — mudá-lo sem mudar a política desligaria a proteção sem quebrar nada visível.
 
 ## Quantidade e foto
 
