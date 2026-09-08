@@ -441,7 +441,7 @@ function App() {
 
       <main className="content">
         {showPrivacy ? <PrivacyPage onBack={() => setShowPrivacy(false)} /> : tab === 'home' ? (
-          <DashboardPage calculations={calculations} materialCount={materials.length} printerCount={printers.length} onNewQuote={() => goToTab('calc')} onHistory={() => goToTab('history')} />
+          <DashboardPage calculations={calculations} materialCount={materials.length} printerCount={printers.length} spools={stock.spools} movements={stock.movements} onNewQuote={() => goToTab('calc')} onHistory={() => goToTab('history')} />
         ) : tab === 'calc' && (
           <CalculatorPage
             quote={quote}

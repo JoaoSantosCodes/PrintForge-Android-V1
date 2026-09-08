@@ -416,8 +416,14 @@ button:active { transform: scale(.98); }
 @media (max-width: 780px) {
   .latest-content { display: block; }
   .latest-values { margin-top: 20px; }
-  .stats-grid { grid-template-columns: 1fr; }
-  .stat-card { min-height: 68px; }
+  /*
+   * Duas colunas, e nao uma. Empilhados, os quatro cartoes gastavam 600 px de altura
+   * para mostrar quatro numeros, com 60% da largura vazia em cada. Tres por linha nao
+   * cabe: "Impressoras" nao passa em 57 px de texto util.
+   */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { min-height: 68px; padding: 14px; gap: 10px; }
+  .stat-card strong { font-size: 19px; }
   .privacy-page { padding: 24px 20px; }
 }
 

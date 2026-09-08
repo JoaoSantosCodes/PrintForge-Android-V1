@@ -390,3 +390,39 @@ describe('quantidade', () => {
     expect(rotulo).toMatch(/575 g de 1\.000 g/);
   });
 });
+
+describe('central de controle', () => {
+  it('conta as bobinas junto dos demais cadastros', () => {
+    render(<App />);
+    irPara('Estoque');
+    fireEvent.click(screen.getByRole('button', { name: /Nova bobina/i }));
+    fireEvent.change(screen.getByLabelText(/Peso da bobina/i), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Salvar$/i }));
+
+    irPara('Início');
+    expect(screen.getByText(/^Bobinas$/i)).toBeInTheDocument();
+    expect(screen.getByText(/na prateleira/i)).toBeInTheDocument();
+  });
+
+  /**
+   * Uma central que só conta itens obriga a abrir cada aba para saber se algo precisa de
+   * atenção. O aviso de bobina acabando é o único dado da tela que pede ação.
+   */
+  it('avisa na central quando uma bobina está acabando', () => {
+    render(<App />);
+    irPara('Estoque');
+    fireEvent.click(screen.getByRole('button', { name: /Nova bobina/i }));
+    fireEvent.change(screen.getByLabelText(/Peso da bobina/i), { target: { value: '100' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Salvar$/i }));
+
+    irPara('Calcular');
+    fireEvent.click(screen.getByRole('button', { name: /Salvar no histórico/i }));
+    irPara('Histórico');
+    fireEvent.click(screen.getByRole('button', { name: /Dar baixa de 85 g/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Baixar 85 g/i }));
+
+    irPara('Início');
+    expect(screen.getByText(/1 acabando/i)).toBeInTheDocument();
+    expect(screen.queryByText(/na prateleira/i)).not.toBeInTheDocument();
+  });
+});
