@@ -102,7 +102,35 @@ Isso é deliberado: a nuvem só entra numa compilação de produção quando alg
 aquele arquivo, e não por esquecimento. Para a versão web na Vercel, a mesma variável
 precisa ser cadastrada lá.
 
-## 5. Conferir que funcionou
+## 5. Testar no aparelho, sem tocar no caminho da loja
+
+Aqui há uma armadilha: `npm run build` roda em modo produção, o Vite lê
+`.env.production` **depois** do `.env`, e lá as três variáveis estão vazias de propósito.
+Ou seja, **todo build de produção sai sem nuvem e sem botão do Google** — não há o que
+testar nele. Subir o `versionCode` não muda isso.
+
+Para um pacote com a nuvem ligada, sem mexer no arquivo que protege a loja:
+
+```bash
+npm run android:cloud      # vite build --mode staging: le o .env, ignora o .env.production
+cd android && ./gradlew.bat installRelease
+```
+
+`--mode staging` faz o Vite carregar `.env` e `.env.staging` (que não existe), e **não**
+`.env.production`. O build continua sendo de produção — minificado, com R8 —, só muda de
+onde vem a configuração. O caminho da loja, `npm run android:release`, segue lendo o
+`.env.production` e continua saindo sem nuvem por padrão. O seguro continua sendo o
+padrão; ligar exige um comando diferente.
+
+**O `versionCode` não importa para instalar direto.** Ele só existe para o Play recusar
+envio repetido. Instalação por `installRelease` ou `adb install` ignora o número — e só
+vale subir para 23 quando houver o que enviar.
+
+**O SHA-1 tem que casar com quem assinou.** `installRelease` usa a chave de *upload*, e
+`assembleDebug` usa a de depuração. As duas precisam estar registradas no cliente Android
+do Google Cloud, junto da chave de assinatura do app — ver a seção 2.
+
+## 6. Conferir que funcionou
 
 ```bash
 # a nuvem so aparece com as tres variaveis preenchidas
