@@ -5,6 +5,7 @@ export type BackState = {
   tab: Tab;
   tabHistory: Tab[];
   showPrivacy: boolean;
+  showAccount: boolean;
   showMaterialForm: boolean;
   showPrinterForm: boolean;
   showSpoolForm: boolean;
@@ -15,6 +16,7 @@ export type BackAction =
   | { type: 'closePrinterForm' }
   | { type: 'closeSpoolForm' }
   | { type: 'closePrivacy' }
+  | { type: 'closeAccount' }
   | { type: 'popTab'; tab: Tab }
   | { type: 'goHome' }
   | { type: 'exit' };
@@ -31,6 +33,7 @@ export function resolveBackAction(state: BackState): BackAction {
   if (state.showPrinterForm) return { type: 'closePrinterForm' };
   if (state.showSpoolForm) return { type: 'closeSpoolForm' };
   if (state.showPrivacy) return { type: 'closePrivacy' };
+  if (state.showAccount) return { type: 'closeAccount' };
   if (state.tabHistory.length > 0) {
     return { type: 'popTab', tab: state.tabHistory[state.tabHistory.length - 1] };
   }

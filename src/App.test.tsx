@@ -426,3 +426,51 @@ describe('central de controle', () => {
     expect(screen.queryByText(/na prateleira/i)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * A seção de nuvem só existe quando a compilação tem credenciais, e os testes rodam sem
+ * elas de propósito — é o mesmo caminho da produção. O que dá para verificar aqui é
+ * justamente isso: que a ausência é silenciosa e não deixa botão morto na tela.
+ */
+describe('conta', () => {
+  it('não mostra nada de nuvem quando a compilação não tem credenciais', () => {
+    render(<App />);
+    irPara('Ajustes');
+    expect(screen.queryByText(/Cópia na nuvem/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Entrar ou criar conta/i })).not.toBeInTheDocument();
+  });
+
+  it('o app inteiro continua utilizável sem conta', () => {
+    render(<App />);
+    irPara('Calcular');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/R\$/);
+    irPara('Estoque');
+    expect(screen.getByRole('heading', { name: /^Estoque$/i })).toBeInTheDocument();
+  });
+});
+
+describe('telas sobrepostas', () => {
+  /**
+   * A página de privacidade renderizava empilhada por cima dos Ajustes, com as duas
+   * rolando juntas — `showPrivacy` guardava só o primeiro bloco do `main`, e os
+   * `{tab === '...' && ...}` seguintes continuavam valendo. Só ficou visível quando a
+   * tela de conta nasceu com o mesmo defeito.
+   */
+  it('a política de privacidade esconde os Ajustes em vez de empilhar', () => {
+    render(<App />);
+    irPara('Ajustes');
+    expect(screen.getByRole('heading', { name: /Parâmetros padrão/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Política de privacidade/i }));
+    expect(screen.getByRole('heading', { name: /Política de privacidade/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Parâmetros padrão/i })).not.toBeInTheDocument();
+  });
+
+  it('o voltar devolve os Ajustes inteiros', () => {
+    render(<App />);
+    irPara('Ajustes');
+    fireEvent.click(screen.getByRole('button', { name: /Política de privacidade/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Voltar/i }));
+    expect(screen.getByRole('heading', { name: /Parâmetros padrão/i })).toBeInTheDocument();
+  });
+});

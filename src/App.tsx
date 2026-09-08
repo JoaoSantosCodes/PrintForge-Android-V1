@@ -14,6 +14,7 @@ import { HistoryPage } from './features/HistoryPage';
 import { StockPage } from './features/StockPage';
 import { PrivacyPage, SettingsPage } from './features/SettingsPage';
 import { CloudSection } from './features/CloudSection';
+import { AccountPage } from './features/AccountPage';
 import { useCloudBackup } from './infrastructure/cloud/useCloudBackup';
 import { appendCalculation } from './core/history';
 import { pieces } from './core/quantity';
@@ -101,6 +102,7 @@ function App() {
   const [tabHistory, setTabHistory] = useState<Tab[]>([]);
   const { preference: themePreference, setPreference: setThemePreference } = useTheme();
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
   const [materials, setMaterials] = useState<Material[]>(loadMaterials);
   const [printers, setPrinters] = useState<PrinterModel[]>(loadPrinters);
   const [calculations, setCalculations] = useState<CalculationRecord[]>(() => calculationsRepository.get());
@@ -199,6 +201,7 @@ function App() {
 
   const goToTab = (next: Tab) => {
     setShowPrivacy(false);
+    setShowAccount(false);
     if (next === tab) return;
     setTabHistory((current) => [...current, tab]);
     setTab(next);
@@ -206,7 +209,7 @@ function App() {
 
   // Ordem de precedencia do botao voltar: primeiro fecha o que esta por cima,
   // depois desfaz a navegacao, e so entao deixa o app encerrar.
-  const backState = { tab, tabHistory, showPrivacy, showMaterialForm, showPrinterForm, showSpoolForm };
+  const backState = { tab, tabHistory, showPrivacy, showAccount, showMaterialForm, showPrinterForm, showSpoolForm };
   const handleBack = () => {
     const action = resolveBackAction(backState);
     switch (action.type) {
@@ -214,6 +217,7 @@ function App() {
       case 'closePrinterForm': setShowPrinterForm(false); return true;
       case 'closeSpoolForm': setShowSpoolForm(false); return true;
       case 'closePrivacy': setShowPrivacy(false); return true;
+      case 'closeAccount': setShowAccount(false); return true;
       case 'popTab':
         setTab(action.tab);
         setTabHistory((current) => current.slice(0, -1));
@@ -300,6 +304,9 @@ function App() {
     photoIds: () => calculations.filter((item) => item.hasPhoto).map((item) => item.id),
     notify: setToast,
   });
+
+  /** Privacidade e conta se abrem por cima da aba e escondem o conteudo dela. */
+  const sobreposta = showPrivacy || (showAccount && nuvem.status !== null);
 
   const updateQuoteNumber = (key: keyof QuoteInput, rawValue: string) => {
     setQuote((current) => ({ ...current, [key]: clampNumericField(key, numberValue(rawValue)) }));
@@ -440,7 +447,31 @@ function App() {
       </header>
 
       <main className="content">
-        {showPrivacy ? <PrivacyPage onBack={() => setShowPrivacy(false)} /> : tab === 'home' ? (
+        {/*
+          As telas sobrepostas suprimem a aba inteira.
+
+          Antes, `showPrivacy` guardava so o primeiro bloco, e os `{tab === '...' && ...}`
+          seguintes continuavam renderizando: a pagina de privacidade aparecia empilhada
+          por cima dos Ajustes, com as duas rolando juntas. So ficou visivel quando a tela
+          de conta nasceu com o mesmo defeito.
+        */}
+        {sobreposta ? (
+          showAccount && nuvem.status !== null ? (
+
+                  <AccountPage
+                    status={nuvem.status}
+                    busy={nuvem.busy}
+                    onBack={() => setShowAccount(false)}
+                    onSignIn={nuvem.signIn}
+                    onSignUp={nuvem.signUp}
+                    onSignOut={nuvem.signOut}
+                    onUpload={nuvem.upload}
+                    onRestore={nuvem.restore}
+                    onDeleteCloud={nuvem.remove}
+                  />
+          ) : <PrivacyPage onBack={() => setShowPrivacy(false)} />
+        ) : (<>
+        {tab === 'home' ? (
           <DashboardPage calculations={calculations} materialCount={materials.length} printerCount={printers.length} spools={stock.spools} movements={stock.movements} onNewQuote={() => goToTab('calc')} onHistory={() => goToTab('history')} />
         ) : tab === 'calc' && (
           <CalculatorPage
@@ -553,20 +584,10 @@ function App() {
             onChange={updateSetting}
             onRestore={restoreDefaults}
             onPrivacy={() => setShowPrivacy(true)}
-            cloud={(
-              <CloudSection
-                status={nuvem.status}
-                busy={nuvem.busy}
-                onSignIn={nuvem.signIn}
-                onSignUp={nuvem.signUp}
-                onSignOut={nuvem.signOut}
-                onUpload={nuvem.upload}
-                onRestore={nuvem.restore}
-                onDeleteCloud={nuvem.remove}
-              />
-            )}
+            cloud={<CloudSection status={nuvem.status} onOpen={() => setShowAccount(true)} />}
           />
         )}
+        </>)}
       </main>
 
       <nav className="bottom-nav" aria-label="Navegação principal">

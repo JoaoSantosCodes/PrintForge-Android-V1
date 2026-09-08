@@ -485,7 +485,14 @@ button:active { transform: scale(.98); }
  */
 .icon-button { position: relative; }
 .icon-button::after { content: ''; position: absolute; inset: -8px; }
+/*
+ * O `inline-flex` veio do alargamento de alvos de toque da Fase 6 e desfez o
+ * `display: block` do voltar, colando-o no texto seguinte ("← VoltarSUA CONTA"). O botao
+ * precisa das duas coisas: flex por dentro, para o alvo de 44 px, e uma linha so por
+ * fora. `width: fit-content` da isso sem voltar a `block`, que quebraria o alinhamento.
+ */
 .text-button, .back-button { position: relative; min-height: 44px; display: inline-flex; align-items: center; }
+.back-button { display: flex; width: fit-content; }
 .bottom-nav button { min-height: 48px; }
 .field input, .field select { min-height: 42px; }
 
@@ -578,3 +585,39 @@ button:active { transform: scale(.98); }
 .cloud-warning { margin: -4px 0 10px; color: var(--danger); font-size: 12px; }
 .cloud-account { margin-top: 14px; justify-content: space-between; }
 .cloud-danger { color: var(--danger); }
+
+/* ---------- tela de conta ---------- */
+
+/*
+ * Mesma estrutura da página de privacidade: uma tela por cima da aba, com o voltar em
+ * cima. As duas se alcançam a partir dos Ajustes e as duas saem pelo botão físico.
+ */
+.account-page { padding: 22px; }
+.account-page h1 { margin: 8px 0 10px; color: var(--text-strongest); font-size: 24px; letter-spacing: -.02em; }
+.account-lead { margin: 0 0 18px; color: var(--text); font-size: 13.5px; line-height: 1.6; max-width: 46ch; }
+
+.account-status {
+  margin: 0 0 20px; padding: 11px 14px;
+  color: var(--text-value); font-size: 12.5px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface-sunken);
+}
+
+.account-form { display: flex; flex-direction: column; }
+.account-primary, .account-secondary { justify-content: center; width: 100%; margin-top: 14px; }
+.account-toggle { margin: 14px auto 0; }
+.account-note { margin: 18px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+
+.account-identity {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 14px; margin-bottom: 4px;
+  color: var(--accent);
+  border: 1px solid var(--border-accent); border-radius: 12px; background: var(--surface-accent);
+}
+.account-identity span { color: var(--text-strong); font-size: 13.5px; word-break: break-all; }
+
+/* Separado do resto por uma régua: sair e apagar não devem ficar ao alcance do polegar
+   de quem só queria enviar. */
+.account-danger {
+  display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between;
+  margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-subtle);
+}

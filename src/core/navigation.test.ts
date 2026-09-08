@@ -5,6 +5,7 @@ const base: BackState = {
   tab: 'home',
   tabHistory: [],
   showPrivacy: false,
+  showAccount: false,
   showMaterialForm: false,
   showPrinterForm: false,
   showSpoolForm: false,
@@ -13,6 +14,21 @@ const base: BackState = {
 describe('resolveBackAction', () => {
   it('encerra o app na tela inicial sem histórico', () => {
     expect(resolveBackAction(base)).toEqual({ type: 'exit' });
+  });
+
+  it('fecha a tela de conta antes de desfazer navegação', () => {
+    const state = { ...base, tab: 'settings' as const, tabHistory: ['home' as const], showAccount: true };
+    expect(resolveBackAction(state)).toEqual({ type: 'closeAccount' });
+  });
+
+  /**
+   * Privacidade e conta são as duas telas que se abrem por cima dos Ajustes. Abrir uma
+   * fecha a outra na prática, mas se as duas estiverem marcadas o voltar precisa de uma
+   * ordem definida em vez de depender de qual `if` veio primeiro por acaso.
+   */
+  it('privacidade vence conta, se as duas estiverem abertas', () => {
+    const state = { ...base, showPrivacy: true, showAccount: true };
+    expect(resolveBackAction(state)).toEqual({ type: 'closePrivacy' });
   });
 
   it('fecha o formulário de bobina antes de desfazer navegação', () => {
