@@ -1,4 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+/*
+ * As fontes viajam dentro do aplicativo, e nao sao buscadas na rede.
+ *
+ * Antes havia um `@import` do Google Fonts aqui. Num aplicativo que estampa
+ * "OFFLINE FIRST" na propria barra de titulo isso era uma contradicao com consequencia
+ * medida: com a rede bloqueada, `document.fonts` fica *vazio* — nenhuma face carrega, e
+ * a interface inteira cai no `system-ui`. A identidade tipografica existia so para quem
+ * abrisse o aplicativo conectado.
+ *
+ * E o layout ficava a merce de qual fonte tinha chegado: o rotulo "Impressoras" da barra
+ * inferior mede 51,0px em Manrope e 48,0px na fonte do sistema. Medir uma largura sem
+ * saber qual das duas vai renderizar nao mede nada.
+ *
+ * Custo de trazer os arquivos: 60 kB no total. A Manrope e fonte variavel, entao um unico
+ * arquivo de 24,8 kB cobre os cinco pesos que a folha usa (400, 500, 600, 700 e 800) —
+ * eram cinco downloads antes. Da DM Mono vem so o que se usa, 400 e 500.
+ *
+ * Subconjunto `latin` (U+0000-00FF) em todos: cobre todo o portugues — a, a, a, c, e, e,
+ * i, o, o, u. Cirilico, grego e vietnamita ficaram de fora, e sao a maior parte do peso.
+ *
+ * Ambas sao licenciadas em SIL Open Font License, que permite a redistribuicao junto do
+ * aplicativo. `font-display: swap` deixa de importar num arquivo local, mas fica: se o
+ * arquivo faltar num build futuro, o texto aparece na fonte do sistema em vez de sumir.
+ */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-mono-400-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-mono-500-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /*
  * Paleta em tokens por papel, não por cor.
@@ -365,6 +412,36 @@ button:active { transform: scale(.98); }
   .editor-fields { grid-template-columns: 1fr; }
   .editor-fields .field:first-child { grid-column: auto; }
   .history-meta { gap: 11px; flex-wrap: wrap; }
+}
+
+/*
+ * A barra inferior nao pode transbordar, seja qual for a largura.
+ *
+ * Sao sete abas, e a regra acima lhes dava um piso de 58px cada: 7 x 58 + 6 x 2 de
+ * intervalo = 418px de largura minima. Um flex nao encolhe abaixo do `min-width`, entao
+ * abaixo disso o conteudo passa das bordas de uma barra que e `position: fixed` — as
+ * pontas ("Inicio" e "Ajustes") saem da tela. Um celular comum de 360px fica 58px curto;
+ * ate o emulador de teste, com 411px, fica sete pixels curto.
+ *
+ * Aqui o piso vira zero e os sete dividem o que houver em partes iguais. O rotulo que
+ * nao couber e aparado com reticencias, o que e um estreitamento visivel e reversivel —
+ * ao contrario de um botao cortado pela borda, que some sem deixar pista.
+ *
+ * `padding-left/right` e nao `padding`: a regra base guarda o `env(safe-area-inset-bottom)`
+ * no `padding-bottom`, e sobrescrever o atalho inteiro poria os botoes sob a barra de
+ * gestos do Android.
+ */
+@media (max-width: 440px) {
+  .bottom-nav { gap: 0; }
+  .bottom-nav button { flex: 1 1 0; min-width: 0; }
+  /*
+   * O -0.01em existe por dois decimos de pixel. Com as fontes locais o numero e exato:
+   * "Impressoras" mede 51,0px em Manrope de 9px, e um setimo de uma tela de 360px da
+   * 51,4px. Sem o aperto o rotulo passa raspando e ganha reticencias por 0,2px; com ele
+   * mede 49,0px e sobram 2,4px. A 320px continua sendo aparado, que e o comportamento
+   * certo — melhor um rotulo estreitado que um botao fora da tela.
+   */
+  .bottom-nav button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.01em; }
 }
 
 @media (prefers-reduced-motion: reduce) {

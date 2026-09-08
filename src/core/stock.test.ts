@@ -125,6 +125,40 @@ describe('spoolBalances', () => {
   });
 });
 
+/**
+ * O indice existe por desempenho, entao o teste que importa nao e o de um caso: e o de
+ * que ele responde o mesmo que a travessia ingenua, para qualquer combinacao. Se um dia
+ * divergirem, o saldo exibido passa a mentir e nenhum teste de exemplo pegaria isso.
+ */
+describe('spoolBalances responde o mesmo que remainingGrams', () => {
+  it('concorda com a travessia bobina a bobina', () => {
+    const bobinas = [
+      bobina({ id: 'a', baselineGrams: 1000 }),
+      bobina({ id: 'b', baselineGrams: 750, nominalGrams: 1000 }),
+      bobina({ id: 'c', baselineGrams: 250, materialId: 'material-petg' }),
+      bobina({ id: 'sem-movimento' }),
+    ];
+    const movimentos: StockMovement[] = [
+      saida('a', 120, 'm1'),
+      { id: 'm2', spoolId: 'b', kind: 'adjust', grams: -30, createdAt: '', note: '' },
+      saida('c', 900, 'm3'),
+      { id: 'm4', spoolId: 'a', kind: 'adjust', grams: 45, createdAt: '', note: '' },
+      saida('a', 60, 'm5'),
+      // Bobina que ja saiu do estoque: nao existe saldo onde somar.
+      saida('removida', 500, 'm6'),
+    ];
+
+    for (const saldo of spoolBalances(bobinas, movimentos)) {
+      expect(saldo.remaining, saldo.spool.id).toBe(remainingGrams(saldo.spool, movimentos));
+    }
+  });
+
+  it('ignora movimento de bobina que nao esta mais na lista', () => {
+    const saldos = spoolBalances([bobina({ id: 'a' })], [saida('fantasma', 400)]);
+    expect(saldos[0].remaining).toBe(1000);
+  });
+});
+
 describe('lowSpools', () => {
   it('aponta só o que está no limite ou abaixo', () => {
     const bobinas = [bobina({ id: 'ok' }), bobina({ id: 'acabando' })];

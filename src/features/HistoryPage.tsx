@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Boxes, Clock3, History as HistoryIcon, Trash2 } from 'lucide-react';
 import { EmptyState, PageHeader } from '../components/ui';
 import { SelectField } from '../components/fields';
 import { money } from '../core/money';
 import { formatDate, formatDuration } from '../core/format';
-import { spoolBalances, type Spool, type StockMovement } from '../core/stock';
+import { spoolBalances, type Spool, type SpoolBalance, type StockMovement } from '../core/stock';
 import { pieces } from '../core/quantity';
 import { readPhoto } from '../infrastructure/native/photoFile';
 import type { CalculationRecord } from '../core/types';
@@ -16,6 +16,15 @@ export function HistoryPage({ calculations, spools, movements, onRemove, onConsu
   onRemove: (id: string) => void;
   onConsume: (calculation: CalculationRecord, spoolId: string) => void;
 }) {
+  /*
+   * Os saldos são calculados uma vez para a página inteira, e não um por cartão.
+   *
+   * Cada `BaixaDeEstoque` chamava `spoolBalances` por conta própria, o que varria a lista
+   * de movimentos uma vez por bobina, por registro. Nos tetos do aplicativo isso mediu
+   * 39 ms por render — e esta página re-renderiza a cada aviso que aparece na tela.
+   */
+  const saldos = useMemo(() => spoolBalances(spools, movements), [spools, movements]);
+
   return <>
     <PageHeader kicker="REGISTROS IMUTÁVEIS" title="Histórico" description="Cada cálculo guarda um snapshot dos parâmetros, do material e da impressora usados naquele momento." />
     {calculations.length === 0 ? <EmptyState icon={<HistoryIcon />} title="Seu histórico está vazio" description="Salve um orçamento para acompanhar seus cálculos aqui." /> : <div className="history-list">{calculations.map((calculation) => <article className="history-card" key={calculation.id}>
@@ -23,7 +32,7 @@ export function HistoryPage({ calculations, spools, movements, onRemove, onConsu
       <div className="history-meta"><span><Clock3 size={14} /> {formatDuration(calculation.input.printTimeMinutes)}</span><span>{calculation.input.weightGrams} g</span>{pieces(calculation.input.quantity) > 1 && <span>{pieces(calculation.input.quantity)} peças</span>}<span>{formatDate(calculation.createdAt)}</span></div>
       <div className="history-values"><div><small>Custo</small><strong>{money(calculation.breakdown.totalCost)}</strong></div><div><small>Venda</small><strong className="sale-value">{money(calculation.breakdown.salePrice)}</strong></div><div><small>Margem</small><strong>{calculation.input.marginPercent}%</strong></div></div>
       {calculation.hasPhoto && <FotoDoRegistro id={calculation.id} titulo={calculation.input.title} />}
-      <BaixaDeEstoque calculation={calculation} spools={spools} movements={movements} onConsume={onConsume} />
+      <BaixaDeEstoque calculation={calculation} saldos={saldos} onConsume={onConsume} />
     </article>)}</div>}
   </>;
 }
@@ -38,20 +47,19 @@ export function HistoryPage({ calculations, spools, movements, onRemove, onConsu
  * Só oferece bobinas do material daquele orçamento. O material vem do snapshot do
  * registro, então continua certo mesmo que o catálogo tenha mudado depois.
  */
-function BaixaDeEstoque({ calculation, spools, movements, onConsume }: {
+function BaixaDeEstoque({ calculation, saldos, onConsume }: {
   calculation: CalculationRecord;
-  spools: Spool[];
-  movements: StockMovement[];
+  saldos: SpoolBalance[];
   onConsume: (calculation: CalculationRecord, spoolId: string) => void;
 }) {
   const [aberto, setAberto] = useState(false);
-  const compativeis = spoolBalances(
-    spools.filter((spool) => spool.materialId === calculation.material.id),
-    movements,
-  );
   const [escolhida, setEscolhida] = useState('');
 
-  if (spools.length === 0) return null;
+  // Os saldos já chegam ordenados dos mais vazios para os mais cheios; filtrar preserva
+  // a ordem, então o último continua sendo a bobina mais cheia.
+  const compativeis = saldos.filter((saldo) => saldo.spool.materialId === calculation.material.id);
+
+  if (saldos.length === 0) return null;
 
   if (compativeis.length === 0) {
     return <p className="history-stock-note">Nenhuma bobina de {calculation.material.name} cadastrada.</p>;

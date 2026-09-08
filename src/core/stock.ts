@@ -68,12 +68,40 @@ export function remainingGrams(spool: Spool, movements: StockMovement[]): number
   }, spool.baselineGrams);
 }
 
-export function spoolBalance(spool: Spool, movements: StockMovement[]): SpoolBalance {
-  const remaining = remainingGrams(spool, movements);
+/** A fração usa o tamanho de fábrica, e não o saldo de partida: uma bobina compactada
+ *  tem o `baselineGrams` menor, e dividir por ele a faria parecer cheia de novo. */
+function comFracao(spool: Spool, remaining: number): SpoolBalance {
   const fraction = spool.nominalGrams > 0
     ? Math.max(0, Math.min(1, remaining / spool.nominalGrams))
     : 0;
   return { spool, remaining, fraction };
+}
+
+export function spoolBalance(spool: Spool, movements: StockMovement[]): SpoolBalance {
+  return comFracao(spool, remainingGrams(spool, movements));
+}
+
+/**
+ * O saldo de cada bobina, numa passada só sobre os movimentos.
+ *
+ * `remainingGrams` responde por *uma* bobina e varre a lista inteira para isso. Chamada
+ * uma vez por bobina o custo vira bobinas × movimentos, e o histórico chamava uma vez
+ * por cartão — registros × bobinas × movimentos. Nos tetos que este arquivo impõe
+ * (2000 movimentos, 500 registros) isso mediu 39 ms por render num desktop; a WebView de
+ * um celular é bem mais lenta, e o histórico re-renderiza a cada aviso na tela.
+ *
+ * Este índice troca a multiplicação por uma soma: uma passada monta o mapa, cada bobina
+ * lê o seu. Movimento de bobina que não está mais na lista fica de fora, que é o mesmo
+ * que `remainingGrams` faz ao filtrar por `spoolId`.
+ */
+export function balanceIndex(spools: Spool[], movements: StockMovement[]): Map<string, number> {
+  const saldos = new Map(spools.map((spool) => [spool.id, spool.baselineGrams]));
+  for (const movimento of movements) {
+    const atual = saldos.get(movimento.spoolId);
+    if (atual === undefined) continue;
+    saldos.set(movimento.spoolId, movimento.kind === 'out' ? atual - movimento.grams : atual + movimento.grams);
+  }
+  return saldos;
 }
 
 /**
@@ -83,16 +111,18 @@ export function spoolBalance(spool: Spool, movements: StockMovement[]): SpoolBal
  * lista por ordem de cadastro esconde exatamente isso.
  */
 export function spoolBalances(spools: Spool[], movements: StockMovement[]): SpoolBalance[] {
+  const saldos = balanceIndex(spools, movements);
   return spools
-    .map((spool) => spoolBalance(spool, movements))
+    .map((spool) => comFracao(spool, saldos.get(spool.id) ?? spool.baselineGrams))
     .sort((a, b) => a.remaining - b.remaining);
 }
 
 /** Total disponível de um material, somando suas bobinas. */
 export function materialTotal(materialId: string, spools: Spool[], movements: StockMovement[]): number {
+  const saldos = balanceIndex(spools, movements);
   return spools
     .filter((spool) => spool.materialId === materialId)
-    .reduce((total, spool) => total + Math.max(0, remainingGrams(spool, movements)), 0);
+    .reduce((total, spool) => total + Math.max(0, saldos.get(spool.id) ?? spool.baselineGrams), 0);
 }
 
 export type ConsumeResult =
