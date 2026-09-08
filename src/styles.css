@@ -2,62 +2,84 @@
 
 /*
  * Paleta em tokens por papel, não por cor.
- * O tema escuro é a base — foi como o app nasceu e é o que a oficina pede.
- * O claro é desenhado, não invertido: fundo levemente frio, superfícies brancas
- * e um ciano bem mais escuro, porque o #7dd3fc do escuro não tem contraste sobre branco.
+ *
+ * A âncora é o ícone do app: laranja #e06504 (matiz 27°) sobre carvão e branco. O
+ * acento do app é esse laranja clareado para #fb8b3c, porque o tom cru do ícone rende
+ * 5,58:1 sobre o fundo escuro — passa, mas é o mínimo, e acento também é cor de texto.
+ * No tema claro ele escurece para #a8480a: o laranja cru rende 3,10:1 sobre branco e
+ * reprovaria.
+ *
+ * Os neutros são carvão com viés quente, não cinza puro. O ícone usa carvão sem matiz
+ * (#0b0c0d), mas cinza neutro ao lado de um laranja forte lê como cor que ninguém
+ * escolheu; puxar o neutro para o mesmo lado da roda faz a paleta parecer decidida.
+ *
+ * O tema escuro é a base — foi como o app nasceu e é o que a oficina pede. O claro é
+ * desenhado, não invertido.
+ *
+ * Todo par texto/superfície daqui foi medido: nenhum fica abaixo de 4,5:1, e os tons de
+ * apoio não descem de 3:1. O vermelho de erro foi empurrado para o carmim (#f4808f no
+ * escuro, #bf2436 no claro) justamente porque vizinho de laranja um vermelho alaranjado
+ * deixa de comunicar erro.
  */
 
 :root {
   color-scheme: dark;
 
-  --bg: #080d19;
-  --bg-glow: #172b4a;
-  --surface: rgba(14, 25, 43, .88);
-  --surface-bar: rgba(10, 17, 31, .86);
-  --surface-nav: rgba(10, 17, 31, .94);
-  --surface-input: #091321;
-  --surface-raised: #102238;
-  --surface-raised-hover: #152c45;
-  --surface-sunken: #0d1a2d;
-  --surface-accent: #10243a;
-  --surface-ghost: rgba(13, 25, 42, .56);
-  --surface-tip: rgba(17, 38, 61, .64);
-  --hero-from: rgba(25, 48, 79, .96);
-  --hero-to: rgba(15, 28, 47, .94);
+  --bg: #100d0b;
+  --bg-glow: #2e1e11;
+  --surface: rgba(26, 21, 18, .88);
+  --surface-bar: rgba(18, 15, 13, .86);
+  --surface-nav: rgba(18, 15, 13, .94);
+  --surface-input: #151110;
+  --surface-raised: #1c1815;
+  --surface-raised-hover: #241f1a;
+  --surface-sunken: #171310;
+  --surface-accent: #2a1c12;
+  --surface-ghost: rgba(24, 19, 16, .56);
+  --surface-tip: rgba(46, 32, 21, .64);
+  --hero-from: rgba(52, 34, 20, .96);
+  --hero-to: rgba(28, 21, 16, .94);
 
-  --border-subtle: #1b2a3e;
-  --border: #1e2b40;
-  --border-strong: #2b4362;
-  --border-accent: #365372;
+  --border-subtle: #2a2420;
+  --border: #2f2823;
+  --border-strong: #453a31;
+  --border-accent: #6b4b30;
 
-  --text-strongest: #f8fbff;
-  --text-strong: #e6eef8;
-  --text-value: #c6d8e7;
-  --text: #a1b4c8;
-  --text-muted: #7f96ad;
-  --text-faint: #62768e;
+  --text-strongest: #fbf7f4;
+  --text-strong: #efe8e2;
+  --text-value: #d8cec6;
+  --text: #b5aca4;
+  --text-muted: #a3998f;
+  --text-faint: #877d74;
 
-  --accent: #7dd3fc;
-  --accent-2: #6bc4f6;
-  --accent-bright: #a6e4ff;
-  --accent-ink: #06111e;
-  --focus-ring: rgba(101, 191, 244, .12);
+  --accent: #fb8b3c;
+  --accent-2: #e06504;
+  --accent-bright: #ffb27a;
+  --accent-ink: #120c06;
+  --focus-ring: rgba(251, 139, 60, .14);
 
-  --success: #75d5a2;
-  --success-text: #d9f8e7;
-  --success-bg: #102c24;
-  --success-border: #306048;
-  --success-halo: rgba(118, 214, 165, .1);
+  --success: #6fce9b;
+  --success-text: #d6f5e5;
+  --success-bg: #12281d;
+  --success-border: #2f5c43;
+  --success-halo: rgba(111, 206, 155, .1);
 
-  --danger: #f09393;
-  --danger-bg: #251b28;
-  --danger-border: #4c2f3a;
+  --danger: #f4808f;
+  --danger-bg: #2b1619;
+  --danger-border: #58303a;
 
   --violet: #b2a1f5;
   --violet-bg: #241f43;
   --violet-border: #483c75;
 
-  --shadow-hero: rgba(3, 10, 22, .28);
+  --slice-filament: #fb8b3c;
+  --slice-machine: #5aa9e6;
+  --slice-labor: #b2a1f5;
+  --slice-maintenance: #4cc4a0;
+  --slice-energy: #ffd166;
+  --slice-packaging: #8d8078;
+
+  --shadow-hero: rgba(10, 6, 3, .3);
   --shadow-toast: rgba(0, 0, 0, .25);
 
   font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -77,110 +99,124 @@
   :root:not([data-theme="dark"]) {
   color-scheme: light;
 
-  --bg: #eef2f8;
-  --bg-glow: #dbe6f5;
+  --bg: #f7f4f1;
+  --bg-glow: #efe3d6;
   --surface: rgba(255, 255, 255, .92);
-  --surface-bar: rgba(248, 250, 253, .88);
-  --surface-nav: rgba(250, 251, 253, .95);
+  --surface-bar: rgba(252, 250, 248, .88);
+  --surface-nav: rgba(253, 251, 249, .95);
   --surface-input: #ffffff;
-  --surface-raised: #f7fafd;
-  --surface-raised-hover: #eef4fb;
-  --surface-sunken: #f2f6fb;
-  --surface-accent: #e2f0fa;
+  --surface-raised: #fdfbf9;
+  --surface-raised-hover: #f6f0ea;
+  --surface-sunken: #f3eee8;
+  --surface-accent: #fdeadb;
   --surface-ghost: rgba(255, 255, 255, .6);
-  --surface-tip: rgba(226, 240, 250, .7);
+  --surface-tip: rgba(253, 234, 219, .7);
   --hero-from: rgba(255, 255, 255, .96);
-  --hero-to: rgba(238, 245, 252, .94);
+  --hero-to: rgba(247, 241, 235, .94);
 
-  --border-subtle: #e3eaf3;
-  --border: #d5dfec;
-  --border-strong: #bcccdf;
-  --border-accent: #9dc4dd;
+  --border-subtle: #ece5de;
+  --border: #e0d6cc;
+  --border-strong: #c9bbad;
+  --border-accent: #d9a273;
 
-  --text-strongest: #0b1524;
-  --text-strong: #17263c;
-  --text-value: #2c3f5a;
-  --text: #4d6079;
-  --text-muted: #6a7d94;
-  --text-faint: #8797ab;
+  --text-strongest: #1a120c;
+  --text-strong: #2b2018;
+  --text-value: #4a3c31;
+  --text: #6a5a4d;
+  --text-muted: #6e6055;
+  --text-faint: #8b7c6f;
 
-  --accent: #0f7bb0;
-  --accent-2: #1183bd;
-  --accent-bright: #0a6392;
+  --accent: #a8480a;
+  --accent-2: #c2560a;
+  --accent-bright: #8a3a08;
   --accent-ink: #ffffff;
-  --focus-ring: rgba(15, 123, 176, .16);
+  --focus-ring: rgba(168, 72, 10, .16);
 
-  --success: #0e8a5a;
+  --success: #0e7a52;
   --success-text: #0b4a32;
-  --success-bg: #e4f6ed;
+  --success-bg: #e6f5ee;
   --success-border: #a9dcc4;
-  --success-halo: rgba(14, 138, 90, .12);
+  --success-halo: rgba(14, 122, 82, .12);
 
-  --danger: #b8392c;
-  --danger-bg: #fbecea;
-  --danger-border: #eec2bc;
+  --danger: #bf2436;
+  --danger-bg: #fdecec;
+  --danger-border: #f0c4c4;
 
   --violet: #5f45c4;
-  --violet-bg: #eeeafa;
+  --violet-bg: #efeafa;
   --violet-border: #cdc2ef;
 
-  --shadow-hero: rgba(30, 55, 90, .1);
-  --shadow-toast: rgba(30, 55, 90, .16);
+  --slice-filament: #d2650c;
+  --slice-machine: #2f7fc0;
+  --slice-labor: #6b4fd0;
+  --slice-maintenance: #12876a;
+  --slice-energy: #a5740c;
+  --slice-packaging: #8a7d73;
+
+  --shadow-hero: rgba(60, 40, 22, .1);
+  --shadow-toast: rgba(60, 40, 22, .16);
   }
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --bg: #eef2f8;
-  --bg-glow: #dbe6f5;
+  --bg: #f7f4f1;
+  --bg-glow: #efe3d6;
   --surface: rgba(255, 255, 255, .92);
-  --surface-bar: rgba(248, 250, 253, .88);
-  --surface-nav: rgba(250, 251, 253, .95);
+  --surface-bar: rgba(252, 250, 248, .88);
+  --surface-nav: rgba(253, 251, 249, .95);
   --surface-input: #ffffff;
-  --surface-raised: #f7fafd;
-  --surface-raised-hover: #eef4fb;
-  --surface-sunken: #f2f6fb;
-  --surface-accent: #e2f0fa;
+  --surface-raised: #fdfbf9;
+  --surface-raised-hover: #f6f0ea;
+  --surface-sunken: #f3eee8;
+  --surface-accent: #fdeadb;
   --surface-ghost: rgba(255, 255, 255, .6);
-  --surface-tip: rgba(226, 240, 250, .7);
+  --surface-tip: rgba(253, 234, 219, .7);
   --hero-from: rgba(255, 255, 255, .96);
-  --hero-to: rgba(238, 245, 252, .94);
+  --hero-to: rgba(247, 241, 235, .94);
 
-  --border-subtle: #e3eaf3;
-  --border: #d5dfec;
-  --border-strong: #bcccdf;
-  --border-accent: #9dc4dd;
+  --border-subtle: #ece5de;
+  --border: #e0d6cc;
+  --border-strong: #c9bbad;
+  --border-accent: #d9a273;
 
-  --text-strongest: #0b1524;
-  --text-strong: #17263c;
-  --text-value: #2c3f5a;
-  --text: #4d6079;
-  --text-muted: #6a7d94;
-  --text-faint: #8797ab;
+  --text-strongest: #1a120c;
+  --text-strong: #2b2018;
+  --text-value: #4a3c31;
+  --text: #6a5a4d;
+  --text-muted: #6e6055;
+  --text-faint: #8b7c6f;
 
-  --accent: #0f7bb0;
-  --accent-2: #1183bd;
-  --accent-bright: #0a6392;
+  --accent: #a8480a;
+  --accent-2: #c2560a;
+  --accent-bright: #8a3a08;
   --accent-ink: #ffffff;
-  --focus-ring: rgba(15, 123, 176, .16);
+  --focus-ring: rgba(168, 72, 10, .16);
 
-  --success: #0e8a5a;
+  --success: #0e7a52;
   --success-text: #0b4a32;
-  --success-bg: #e4f6ed;
+  --success-bg: #e6f5ee;
   --success-border: #a9dcc4;
-  --success-halo: rgba(14, 138, 90, .12);
+  --success-halo: rgba(14, 122, 82, .12);
 
-  --danger: #b8392c;
-  --danger-bg: #fbecea;
-  --danger-border: #eec2bc;
+  --danger: #bf2436;
+  --danger-bg: #fdecec;
+  --danger-border: #f0c4c4;
 
   --violet: #5f45c4;
-  --violet-bg: #eeeafa;
+  --violet-bg: #efeafa;
   --violet-border: #cdc2ef;
 
-  --shadow-hero: rgba(30, 55, 90, .1);
-  --shadow-toast: rgba(30, 55, 90, .16);
+  --slice-filament: #d2650c;
+  --slice-machine: #2f7fc0;
+  --slice-labor: #6b4fd0;
+  --slice-maintenance: #12876a;
+  --slice-energy: #a5740c;
+  --slice-packaging: #8a7d73;
+
+  --shadow-hero: rgba(60, 40, 22, .1);
+  --shadow-toast: rgba(60, 40, 22, .16);
 }
 
 * { box-sizing: border-box; }
@@ -404,12 +440,23 @@ button:active { transform: scale(.98); }
 .cost-insight { margin: 12px 0 0; padding: 10px 12px; color: var(--text); border-left: 2px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--surface-tip); font-size: 12px; line-height: 1.5; }
 .cost-insight strong { color: var(--text-strong); font-weight: 700; }
 
-.slice-filament { background: var(--accent); }
-.slice-labor { background: var(--violet); }
-.slice-machine { background: var(--success); }
-.slice-energy { background: #e8b04b; }
-.slice-maintenance { background: var(--accent-2); opacity: .55; }
-.slice-packaging { background: var(--text-faint); }
+/*
+ * Escala própria das fatias, e não reaproveitamento dos tokens semânticos.
+ *
+ * Antes a máquina usava o verde de sucesso e a manutenção era o acento com opacidade —
+ * o que amarrava o significado de cada fatia a um papel que não é o dela, e deixava duas
+ * fatias quase iguais. Aqui os seis matizes são espaçados de propósito: o par mais
+ * próximo tem ΔE 30 no escuro e 28 no claro, acima do limite de confusão.
+ *
+ * Cor nunca é o único canal — a legenda repete rótulo e percentual em texto —, mas
+ * fatias vizinhas na mesma barra precisam se distinguir mesmo assim.
+ */
+.slice-filament { background: var(--slice-filament); }
+.slice-labor { background: var(--slice-labor); }
+.slice-machine { background: var(--slice-machine); }
+.slice-energy { background: var(--slice-energy); }
+.slice-maintenance { background: var(--slice-maintenance); }
+.slice-packaging { background: var(--slice-packaging); }
 
 @media (prefers-reduced-motion: reduce) { .cost-slice { transition: none; } }
 

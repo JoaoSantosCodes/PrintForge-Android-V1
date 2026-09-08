@@ -14,9 +14,9 @@ const config: CapacitorConfig = {
       // em vez de travar o app numa tela estática.
       launchAutoHide: true,
       launchShowDuration: 3000,
-      backgroundColor: '#080d19',
+      backgroundColor: '#100d0b',
       androidSpinnerStyle: 'small',
-      spinnerColor: '#38bdf8'
+      spinnerColor: '#fb8b3c'
     }
   }
 };

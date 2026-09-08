@@ -5,8 +5,8 @@ import type { ResolvedTheme } from '../../core/theme';
 
 /** Mesma cor de `--bg` em cada tema, para a barra não destoar do topo da tela. */
 const CHROME_BACKGROUND: Record<ResolvedTheme, string> = {
-  dark: '#080d19',
-  light: '#eef2f8',
+  dark: '#100d0b',
+  light: '#f7f4f1',
 };
 
 const isNative = (): boolean => Capacitor.getPlatform() !== 'web';

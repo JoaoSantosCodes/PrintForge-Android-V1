@@ -24,12 +24,28 @@ Capturas de emulador Android API 36, com o APK de release. As imagens em tamanho
 | Persistência | `localStorage` com validação de schema, espelhado em `SharedPreferences` no Android |
 | Histórico | Teto de 500 registros, cada um com snapshot completo do que foi orçado |
 | Backup | Exportar e importar JSON, com validação e mensagem própria por tipo de recusa |
-| Aparência | Tema claro e escuro em 38 tokens, com escolha Automático/Claro/Escuro |
+| Aparência | Paleta ancorada no ícone — carvão quente e laranja — em tokens por papel, tema claro e escuro |
 | Barra de status | Aparência declarada em `values/` e `values-night/`, e reaplicada pelo tema escolhido |
 | Análise | Barra de composição do custo, destacando a fatia dominante |
 | Nativo | 6 plugins Capacitor: app, preferences, filesystem, share, splash-screen, status-bar |
 | Testes | 143 no total, 37 montando componentes com Testing Library |
 | Verificação | APK de release percorrido em emulador Android API 36 |
+
+## Paleta
+
+A âncora é o ícone do aplicativo: laranja `#e06504` sobre carvão e branco. O app deriva dele, em vez de seguir uma paleta própria.
+
+| | Escuro | Claro |
+|---|---|---|
+| Fundo | `#100d0b` | `#f7f4f1` |
+| Acento | `#fb8b3c` | `#a8480a` |
+| Texto sobre o acento | `#120c06` | `#ffffff` |
+
+O laranja cru do ícone não vira acento diretamente: ele rende 5,58:1 sobre o fundo escuro — passa, mas no limite, e acento também é cor de texto — e apenas 3,10:1 sobre branco, o que reprovaria. Então clareia no escuro e escurece no claro.
+
+Os neutros são carvão com viés quente, e não cinza puro como o do ícone: cinza neutro ao lado de um laranja forte lê como cor que ninguém escolheu.
+
+Todo par texto/superfície foi medido antes de virar CSS — nenhum fica abaixo de 4,5:1, e os tons de apoio não descem de 3:1. O vermelho de erro foi empurrado para o carmim porque, vizinho de laranja, um vermelho alaranjado deixa de comunicar erro. As seis fatias da barra de custo têm escala própria, com o par mais próximo em ΔE 30 no escuro e 28 no claro.
 
 ## Arquitetura
 
