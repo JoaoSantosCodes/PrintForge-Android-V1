@@ -30,8 +30,7 @@ export type CloudPorts = {
 export type CloudActions = {
   status: CloudStatus | null;
   busy: boolean;
-  signIn: (email: string, senha: string) => void;
-  signUp: (email: string, senha: string) => void;
+  signInWithGoogle: () => void;
   signOut: () => void;
   upload: () => void;
   restore: () => void;
@@ -75,8 +74,12 @@ export function useCloudBackup(ports: CloudPorts): CloudActions {
   return {
     status,
     busy,
-    signIn: (email, senha) => void executar(() => cloud.signIn(email, senha)),
-    signUp: (email, senha) => void executar(() => cloud.signUp(email, senha)),
+    /*
+     * Cancelar a folha de contas do Google volta como `message: ''`, e o `??` só troca
+     * nulo — string vazia passa e o aviso não aparece. É o comportamento certo: quem
+     * fechou a folha não precisa de um aviso dizendo que fechou.
+     */
+    signInWithGoogle: () => void executar(cloud.signInWithGoogle),
     signOut: () => void executar(async () => {
       await cloud.signOut();
       return { ok: true, message: 'Conta desconectada.' };

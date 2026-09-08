@@ -22,6 +22,29 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    /*
+     * androidx.browser fixado abaixo da 1.9.0.
+     *
+     * A 1.9.0 declara exigir AGP 8.9.1, e este projeto esta no 8.7.2 — o build falha em
+     * checkDebugAarMetadata com essa mensagem exata. Ela entra pelo bloco do Apple do
+     * @capgo/capacitor-social-login, que ja esta desligado em capacitor.config.ts; mas
+     * `compileOnly` ainda precisa resolver a versao para compilar, entao desligar nao
+     * bastou.
+     *
+     * A 1.8.0 satisfaz tanto o codigo do plugin quanto o androidbrowserhelper 2.5.0, que
+     * pede 1.4.0 e vem no bloco do Google, esse sim em uso.
+     *
+     * A alternativa era subir o AGP para 8.9.1 — o wrapper do Gradle ja e o 8.11.1, que
+     * comporta. Ficou de fora de proposito: trocar a ferramenta que produziu o pacote
+     * publicado no meio de um teste fechado de 14 dias e risco desnecessario agora. Vale
+     * revisitar quando o teste terminar; ai esta linha some.
+     */
+    configurations.configureEach {
+        resolutionStrategy {
+            force 'androidx.browser:browser:1.8.0'
+        }
+    }
 }
 
 task clean(type: Delete) {

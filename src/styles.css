@@ -582,7 +582,7 @@ button:active { transform: scale(.98); }
  * 44px e a marca que o resto do arquivo ja usa. Nos campos, 44 cabe dentro do
  * `min-height: 46px` da linha `.field`, entao o desenho nao muda — so a area sensivel.
  */
-.primary-button, .secondary-button, .theme-switch button { min-height: 44px; }
+.primary-button, .secondary-button, .theme-switch button, .google-button { min-height: 44px; }
 .field input, .field select { min-height: 44px; }
 
 /* Foco visível em tudo que recebe teclado — antes só alguns controles tinham. */
@@ -694,6 +694,35 @@ button:active { transform: scale(.98); }
 .account-form { display: flex; flex-direction: column; }
 .account-primary, .account-secondary { justify-content: center; width: 100%; margin-top: 14px; }
 .account-toggle { margin: 14px auto 0; }
+
+/*
+ * Botão do Google.
+ *
+ * As diretrizes de marca do Google pedem cores próprias, e não o acento do aplicativo:
+ * fundo branco com borda cinza no claro, quase-preto com borda clara no escuro. São os
+ * únicos literais de cor fora do bloco de tokens, e ficam assim de propósito —
+ * tokenizá-los convidaria a "harmonizá-los" com a paleta numa revisão futura, que é
+ * exatamente o que a marca de terceiro não permite.
+ *
+ * A altura vem da regra de alvos de toque, como todo botão do aplicativo.
+ */
+.google-button {
+  display: flex; align-items: center; justify-content: center; gap: 11px;
+  width: 100%; margin-top: 6px; padding: 0 16px;
+  border: 1px solid #747775; border-radius: 10px;
+  background: #fff; color: #1f1f1f;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  transition: background .15s, border-color .15s;
+}
+.google-button:disabled { opacity: .55; }
+.google-button:not(:disabled):hover { background: #f7f8f8; }
+:root[data-theme="dark"] .google-button { border-color: #8e918f; background: #131314; color: #e3e3e3; }
+:root[data-theme="dark"] .google-button:not(:disabled):hover { background: #1e1f20; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .google-button { border-color: #8e918f; background: #131314; color: #e3e3e3; }
+  :root:not([data-theme="light"]) .google-button:not(:disabled):hover { background: #1e1f20; }
+}
+.google-button svg { flex: none; }
 .account-note { margin: 18px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
 
 .account-identity {

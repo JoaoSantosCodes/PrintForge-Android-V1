@@ -1,31 +1,18 @@
-import { useState } from 'react';
 import { CloudUpload, Download, LogOut, Trash2, Upload } from 'lucide-react';
-import { TextField } from '../components/fields';
-import {
-  describeStatus,
-  emailsConferem,
-  looksLikeEmail,
-  passwordProblem,
-  type CloudStatus,
-} from '../core/cloudBackup';
+import { describeStatus, type CloudStatus } from '../core/cloudBackup';
 
 /**
  * A conta, em tela inteira.
  *
- * Estava num cartão dentro dos Ajustes, e o formulário nascia espremido: dois campos, uma
- * confirmação de e-mail, mensagens de erro e a explicação de que o app funciona sem conta
- * — tudo disputando a mesma largura de um cartão entre outros cartões.
- *
- * Aqui há espaço para o erro aparecer sem empurrar o resto, e para a recuperação de senha
- * caber quando existir. O que **não** muda é a regra: o aplicativo continua inteiro sem
- * conta, e esta tela só se alcança por quem foi procurá-la.
+ * Começou como um cartão espremido nos Ajustes, virou tela própria com dois campos e uma
+ * confirmação de e-mail, e agora é um botão. A regra nunca mudou: o aplicativo continua
+ * inteiro sem conta, e esta tela só se alcança por quem foi procurá-la.
  */
 export function AccountPage({
   status,
   busy,
   onBack,
-  onSignIn,
-  onSignUp,
+  onSignInWithGoogle,
   onSignOut,
   onUpload,
   onRestore,
@@ -34,8 +21,7 @@ export function AccountPage({
   status: CloudStatus;
   busy: boolean;
   onBack: () => void;
-  onSignIn: (email: string, senha: string) => void;
-  onSignUp: (email: string, senha: string) => void;
+  onSignInWithGoogle: () => void;
   onSignOut: () => void;
   onUpload: () => void;
   onRestore: () => void;
@@ -54,68 +40,62 @@ export function AccountPage({
       <p className="account-status">{describeStatus(status)}</p>
 
       {status.state === 'signed-out'
-        ? <Entrada busy={busy} onSignIn={onSignIn} onSignUp={onSignUp} />
+        ? <Entrada busy={busy} onSignInWithGoogle={onSignInWithGoogle} />
         : <Conectado status={status} busy={busy} onSignOut={onSignOut} onUpload={onUpload} onRestore={onRestore} onDeleteCloud={onDeleteCloud} />}
     </section>
   );
 }
 
-function Entrada({ busy, onSignIn, onSignUp }: {
-  busy: boolean;
-  onSignIn: (email: string, senha: string) => void;
-  onSignUp: (email: string, senha: string) => void;
-}) {
-  const [email, setEmail] = useState('');
-  const [confirmacao, setConfirmacao] = useState('');
-  const [senha, setSenha] = useState('');
-  const [criando, setCriando] = useState(false);
-
-  const emailInvalido = email !== '' && !looksLikeEmail(email);
-  const problemaDaSenha = senha === '' ? null : passwordProblem(senha);
-  const divergente = criando && confirmacao !== '' && !emailsConferem(email, confirmacao);
-  const podeEnviar = !busy
-    && looksLikeEmail(email)
-    && passwordProblem(senha) === null
-    && (!criando || emailsConferem(email, confirmacao));
-
+/**
+ * Um botão, e não um formulário.
+ *
+ * Não há "entrar" separado de "criar conta": o Supabase cria o usuário na primeira troca
+ * de ID token e reconhece o mesmo nas seguintes. Oferecer as duas opções seria pedir uma
+ * decisão que não muda nada.
+ *
+ * O logotipo do Google é SVG inline, com as quatro cores oficiais, porque as diretrizes
+ * de marca pedem a marca de verdade — e porque um ícone genérico de nuvem não diz à
+ * pessoa qual conta ela vai usar.
+ */
+function Entrada({ busy, onSignInWithGoogle }: { busy: boolean; onSignInWithGoogle: () => void }) {
   return (
     <div className="account-form">
-      <TextField label="E-mail" value={email} placeholder="voce@exemplo.com" onChange={setEmail} />
-      {emailInvalido && <p className="cloud-warning">Esse e-mail não parece completo.</p>}
-
-      {/*
-        A confirmação só existe no cadastro. Entrar já pressupõe a conta criada, e pedir o
-        endereço duas vezes ali seria atrito sem propósito.
-      */}
-      {criando && (
-        <>
-          <TextField label="Repita o e-mail" value={confirmacao} placeholder="o mesmo endereço" onChange={setConfirmacao} />
-          {divergente && <p className="cloud-warning">Os dois e-mails estão diferentes.</p>}
-        </>
-      )}
-
-      <TextField label="Senha" value={senha} placeholder="pelo menos 6 caracteres" onChange={setSenha} type="password" />
-      {problemaDaSenha && <p className="cloud-warning">{problemaDaSenha}</p>}
-
       <button
-        className="primary-button account-primary"
+        className="google-button"
         type="button"
-        disabled={!podeEnviar}
-        onClick={() => (criando ? onSignUp(email, senha) : onSignIn(email, senha))}
+        disabled={busy}
+        onClick={onSignInWithGoogle}
       >
-        {busy ? 'Aguarde…' : criando ? 'Criar conta' : 'Entrar'}
-      </button>
-
-      <button className="text-button account-toggle" type="button" onClick={() => { setCriando((atual) => !atual); setConfirmacao(''); }}>
-        {criando ? 'Já tenho uma conta' : 'Ainda não tenho conta'}
+        <LogoGoogle />
+        {busy ? 'Aguarde…' : 'Continuar com o Google'}
       </button>
 
       <p className="account-note">
         O PrintForge funciona por completo sem conta. Ela serve só para guardar a cópia, e
         nada é enviado sem você tocar em “Enviar para a nuvem”.
-        {criando && ' Confira o e-mail com atenção: é por ele que você recupera a senha.'}
+      </p>
+      <p className="account-note">
+        O Google confirma quem é você — o PrintForge não vê nem guarda a sua senha, e não
+        há senha nova para inventar ou esquecer. Do seu perfil, só o endereço de e-mail
+        é usado, e só para dizer de quem é a cópia guardada.
+      </p>
+      <p className="account-note">
+        Prefere não usar conta nenhuma? O backup em arquivo, nos Ajustes, faz o mesmo
+        trabalho sem servidor e sem internet.
       </p>
     </div>
+  );
+}
+
+/** Marca do Google nas quatro cores oficiais. `aria-hidden` porque o botão já diz o nome. */
+function LogoGoogle() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.1-3.8 6.6-9.4 6.6-16.1z" />
+      <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.1 15.4 46 24 46z" />
+      <path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.3-2.9.7-4.2v-5.7H4.5C3 17.1 2.1 20.4 2.1 24s.9 6.9 2.4 9.9l7.3-5.7z" />
+      <path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.2 29.9 2 24 2 15.4 2 8.1 6.9 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9 12.2-9z" />
+    </svg>
   );
 }
 

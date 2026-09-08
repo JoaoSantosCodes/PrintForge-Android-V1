@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   cloudPath,
-  emailsConferem,
   cloudPhotoPath,
   describeStatus,
-  looksLikeEmail,
-  MIN_PASSWORD,
   ownerOf,
-  passwordProblem,
 } from './cloudBackup';
 
 describe('caminhos na nuvem', () => {
@@ -65,65 +61,4 @@ describe('describeStatus', () => {
   });
 });
 
-describe('looksLikeEmail', () => {
-  it('aceita endereços comuns', () => {
-    expect(looksLikeEmail('joao@exemplo.com')).toBe(true);
-    expect(looksLikeEmail('joao.silva+nota@sub.exemplo.com.br')).toBe(true);
-  });
 
-  it('recusa o que não tem arroba ou domínio', () => {
-    expect(looksLikeEmail('joao')).toBe(false);
-    expect(looksLikeEmail('joao@')).toBe(false);
-    expect(looksLikeEmail('@exemplo.com')).toBe(false);
-    expect(looksLikeEmail('joao@exemplo')).toBe(false);
-  });
-
-  it('recusa espaço, que é o erro mais comum ao colar', () => {
-    expect(looksLikeEmail('joao @exemplo.com')).toBe(false);
-    expect(looksLikeEmail(' joao@exemplo.com ')).toBe(true);
-  });
-
-  it('recusa domínio malformado', () => {
-    expect(looksLikeEmail('joao@.com')).toBe(false);
-    expect(looksLikeEmail('joao@exemplo.')).toBe(false);
-  });
-
-  it('recusa mais de um arroba', () => {
-    expect(looksLikeEmail('a@b@c.com')).toBe(false);
-  });
-});
-
-describe('passwordProblem', () => {
-  it('avisa antes de o servidor recusar', () => {
-    expect(passwordProblem('12345')).toContain(String(MIN_PASSWORD));
-  });
-
-  it('aceita senha no limite', () => {
-    expect(passwordProblem('123456')).toBeNull();
-  });
-});
-
-describe('emailsConferem', () => {
-  /**
-   * Existe porque a confirmação por e-mail está desligada: sem ela, digitar errado no
-   * cadastro cria uma conta irrecuperável, já que a redefinição de senha iria para o
-   * endereço errado.
-   */
-  it('aceita iguais', () => {
-    expect(emailsConferem('joao@exemplo.com', 'joao@exemplo.com')).toBe(true);
-  });
-
-  it('ignora maiúsculas e espaços nas pontas, que não são erro de digitação', () => {
-    expect(emailsConferem('Joao@Exemplo.com', ' joao@exemplo.com ')).toBe(true);
-  });
-
-  it('pega a letra trocada, que é o caso que importa', () => {
-    expect(emailsConferem('joao@exemplo.com', 'joao@exemlpo.com')).toBe(false);
-  });
-
-  it('não considera dois vazios como conferência válida na tela', () => {
-    // Iguais entre si, mas a tela só libera o botão com o e-mail também válido.
-    expect(emailsConferem('', '')).toBe(true);
-    expect(looksLikeEmail('')).toBe(false);
-  });
-});

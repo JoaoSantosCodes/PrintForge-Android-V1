@@ -46,6 +46,30 @@ Os links de recompra e de modelo também **não** são coleta, e nem sequer são
 app: `target="_blank"` entrega o endereço ao navegador do sistema, e o PrintForge não
 busca nada de lá. Quem visita é o navegador, com o próprio histórico e os próprios cookies.
 
+## O login mudou de e-mail e senha para conta Google
+
+O que a declaração precisa dizer **não mudou de categoria**, e vale registrar por quê.
+
+Antes: o app coletava e-mail e senha, e a senha ia para o Supabase em formato
+irreversível. Agora: o app **não recebe senha nenhuma**. O Credential Manager do Android
+devolve um ID token, e o único dado de perfil que sai dali para o servidor é o endereço
+de e-mail, que identifica de quem é a cópia.
+
+- **E-mail:** continua "coleta sim, compartilhamento não", pelo mesmo motivo de antes —
+  vai para um servidor do próprio desenvolvedor, e servidor próprio não é terceiro.
+- **Senha:** sai da declaração. Não há mais o que declarar.
+- **Login com o Google:** a confirmação acontece entre o aparelho e o Google, pela tela do
+  sistema. O Google registra que este aplicativo pediu a confirmação — o que a política
+  de privacidade descreve —, mas o app não envia dado do usuário ao Google para isso.
+
+Nada de novo entra em "compartilhar". O que entra na política é uma explicação, não uma
+categoria nova de coleta.
+
+**Consequência no roadmap:** a confirmação por e-mail estava desligada no projeto Supabase
+para permitir testar, e era esse buraco — qualquer pessoa criando conta com o e-mail de
+outra — que mantinha a nuvem fora das compilações de produção. Com o Google confirmando o
+endereço, o buraco fecha sem SMTP próprio.
+
 ## As fontes deixaram de ser uma requisição de saída
 
 Até o versionCode 21 a folha de estilo abria com um `@import` do Google Fonts. Eram quatro

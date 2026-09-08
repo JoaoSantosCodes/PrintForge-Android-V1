@@ -68,45 +68,12 @@ export function describeStatus(status: CloudStatus): string {
   return `Última cópia em ${quando} · ${fotos}`;
 }
 
-/**
- * O e-mail é pedido em toda tela de conta, e digitar errado no cadastro custa caro:
- * a pessoa cria uma conta que não consegue recuperar. Isto não valida se o endereço
- * existe — só rejeita o que claramente não é endereço.
- */
-export function looksLikeEmail(value: string): boolean {
-  const texto = value.trim();
-  if (texto.length < 5 || texto.length > 254) return false;
-  if (/\s/.test(texto)) return false;
-
-  const partes = texto.split('@');
-  if (partes.length !== 2) return false;
-
-  const [local, dominio] = partes;
-  if (local.length === 0 || dominio.length < 3) return false;
-  if (!dominio.includes('.')) return false;
-  if (dominio.startsWith('.') || dominio.endsWith('.')) return false;
-  return true;
-}
-
-/** Mínimo que o Supabase aceita, dito antes de a pessoa tentar e ser recusada. */
-export const MIN_PASSWORD = 6;
-
-export function passwordProblem(value: string): string | null {
-  if (value.length < MIN_PASSWORD) return `A senha precisa de pelo menos ${MIN_PASSWORD} caracteres.`;
-  return null;
-}
-
-/**
- * Compara os dois campos de e-mail do cadastro.
+/*
+ * Aqui moravam `looksLikeEmail`, `MIN_PASSWORD`, `passwordProblem` e `emailsConferem`.
  *
- * A confirmação por e-mail está desligada no projeto, o que torna o cadastro imediato —
- * e tira a rede que pegava endereço digitado errado. Sem ela, um erro de digitação cria
- * uma conta que a pessoa nunca recupera: a redefinição de senha iria para o endereço
- * errado, que provavelmente nem existe.
- *
- * Digitar duas vezes é a defesa mais barata contra isso. Compara sem diferenciar
- * maiúsculas nem espaços nas pontas, porque aí não há erro nenhum a apontar.
+ * Saíram junto com o cadastro por e-mail e senha. A conferência do endereço em dois
+ * campos existia como defesa contra um buraco específico — a confirmação por e-mail
+ * estava desligada, então um endereço digitado errado virava conta irrecuperável. Com o
+ * Google, quem confirma o endereço é o Google, e não há senha a recuperar. A defesa
+ * deixou de ter o que defender, em vez de continuar por inercia.
  */
-export function emailsConferem(primeiro: string, segundo: string): boolean {
-  return primeiro.trim().toLowerCase() === segundo.trim().toLowerCase();
-}

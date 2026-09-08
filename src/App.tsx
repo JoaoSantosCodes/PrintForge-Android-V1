@@ -461,8 +461,7 @@ function App() {
               status={nuvem.status}
               busy={nuvem.busy}
               onBack={() => setShowAccount(false)}
-              onSignIn={nuvem.signIn}
-              onSignUp={nuvem.signUp}
+              onSignInWithGoogle={nuvem.signInWithGoogle}
               onSignOut={nuvem.signOut}
               onUpload={nuvem.upload}
               onRestore={nuvem.restore}

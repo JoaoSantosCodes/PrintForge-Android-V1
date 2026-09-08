@@ -8,6 +8,7 @@ import {
 import { photoFileName } from '../../core/photo';
 import { readPhoto, savePhoto } from '../native/photoFile';
 import { getClient } from './supabase';
+import { googleIdToken, googleSignOut } from './googleSignIn';
 
 export type CloudResult = { ok: true; message: string } | { ok: false; reason: string };
 
@@ -19,41 +20,54 @@ export type CloudResult = { ok: true; message: string } | { ok: false; reason: s
  */
 function traduzir(mensagem: string): string {
   const m = mensagem.toLowerCase();
-  if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
-  if (m.includes('user already registered')) return 'Já existe uma conta com esse e-mail. Entre em vez de criar.';
-  if (m.includes('email not confirmed')) return 'Confirme o e-mail pelo link que enviamos antes de entrar.';
   if (m.includes('failed to fetch') || m.includes('network')) return 'Sem conexão com o servidor. Verifique a internet.';
-  if (m.includes('over_email_send_rate_limit') || m.includes('rate limit')) return 'Muitas tentativas seguidas. Espere um minuto.';
+  if (m.includes('rate limit')) return 'Muitas tentativas seguidas. Espere um minuto.';
+  // Chega quando o par nonce cru / nonce com hash sai trocado, ou quando a tentativa
+  // anterior foi reaproveitada. Ver `core/nonce.ts`.
+  if (m.includes('nonce')) return 'A credencial do Google não pôde ser conferida. Tente entrar de novo.';
+  // O provedor Google precisa estar ligado no painel do Supabase.
+  if (m.includes('provider is not enabled')) return 'O login com o Google não está habilitado no servidor. Avise o desenvolvedor.';
   return mensagem;
 }
 
-export async function signIn(email: string, senha: string): Promise<CloudResult> {
+/**
+ * Entra com a conta Google do aparelho.
+ *
+ * Substituiu o cadastro por e-mail e senha, e não só por conveniência: **o Google já
+ * verificou o endereço**. Isso apaga o bloqueio que mantinha a nuvem fora das
+ * compilações de produção — sem cadastro por e-mail não há confirmação a enviar, e sem
+ * senha não há recuperação de senha. O SMTP próprio deixou de ser pré-requisito.
+ *
+ * Não há mais "criar conta" separado de "entrar": o Supabase cria o usuário na primeira
+ * troca de ID token e reconhece o mesmo nas seguintes. Um botão só.
+ */
+export async function signInWithGoogle(): Promise<CloudResult> {
   const cliente = await getClient();
   if (!cliente) return { ok: false, reason: 'A nuvem não está configurada nesta versão do aplicativo.' };
 
-  const { error } = await cliente.auth.signInWithPassword({ email: email.trim(), password: senha });
+  const credencial = await googleIdToken();
+  if (!credencial.ok) {
+    // Fechar a folha de contas não é erro. Devolver `ok: true` sem mensagem deixa a tela
+    // exatamente como estava, que é o que a pessoa pediu ao fechar.
+    if (credencial.cancelado) return { ok: true, message: '' };
+    return { ok: false, reason: credencial.reason };
+  }
+
+  const { error } = await cliente.auth.signInWithIdToken({
+    provider: 'google',
+    token: credencial.idToken,
+    nonce: credencial.nonce,
+  });
   if (error) return { ok: false, reason: traduzir(error.message) };
   return { ok: true, message: 'Conta conectada.' };
-}
-
-export async function signUp(email: string, senha: string): Promise<CloudResult> {
-  const cliente = await getClient();
-  if (!cliente) return { ok: false, reason: 'A nuvem não está configurada nesta versão do aplicativo.' };
-
-  const { data, error } = await cliente.auth.signUp({ email: email.trim(), password: senha });
-  if (error) return { ok: false, reason: traduzir(error.message) };
-
-  // Com confirmação de e-mail ligada no projeto, `session` vem nula e a conta ainda não
-  // serve. Dizer isso é a diferença entre a pessoa esperar o e-mail e achar que travou.
-  if (!data.session) {
-    return { ok: true, message: 'Conta criada. Confirme o e-mail para poder entrar.' };
-  }
-  return { ok: true, message: 'Conta criada e conectada.' };
 }
 
 export async function signOut(): Promise<void> {
   const cliente = await getClient();
   await cliente?.auth.signOut();
+  // Também do lado do Google: senão o Credential Manager guarda a conta escolhida e o
+  // próximo toque entra direto, dando a impressão de que sair não funcionou.
+  await googleSignOut();
 }
 
 /** E-mail da sessão atual, ou `null` se não há sessão. */

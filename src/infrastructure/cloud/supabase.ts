@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { googleConfigured } from './googleSignIn';
 
 /**
  * Cliente do Supabase, carregado sob demanda.
@@ -16,9 +17,17 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-/** Se a nuvem está configurada nesta compilação. */
+/**
+ * Se a nuvem está configurada nesta compilação.
+ *
+ * Exige as três coisas, e não só as duas do Supabase: sem o identificador do cliente do
+ * Google não há como entrar, e a tela apareceria com um botão que falha ao ser tocado.
+ * Sumir por inteiro é melhor que oferecer o que não funciona.
+ */
 export function cloudConfigured(): boolean {
-  return typeof URL === 'string' && URL !== '' && typeof ANON_KEY === 'string' && ANON_KEY !== '';
+  return typeof URL === 'string' && URL !== ''
+    && typeof ANON_KEY === 'string' && ANON_KEY !== ''
+    && googleConfigured();
 }
 
 let cliente: SupabaseClient | null = null;
@@ -34,8 +43,9 @@ export async function getClient(): Promise<SupabaseClient | null> {
       // curtas, e pedir senha a cada abertura tornaria o backup na nuvem um estorvo.
       persistSession: true,
       autoRefreshToken: true,
-      // Não há servidor de redirecionamento nem esquema de URL registrado: a WebView do
-      // Android não volta de um link, então nada de detectar sessão pela URL.
+      // O login não passa por redirecionamento: o Credential Manager do Android devolve
+      // um ID token direto ao aplicativo, e a sessão nasce de `signInWithIdToken`. Não há
+      // esquema de URL registrado, e não precisa haver.
       detectSessionInUrl: false,
     },
   });
